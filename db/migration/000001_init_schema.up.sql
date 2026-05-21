@@ -1,42 +1,41 @@
-CREATE TABLE "accounts" (
-  "id" bigserial PRIMARY KEY,
-  "owner" varchar NOT NULL,
-  "balance" bigint NOT NULL,
-  "currency" varchar NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+CREATE TABLE workspaces (
+  id BIGSERIAL PRIMARY KEY,
+  name VARCHAR NOT NULL,
+  token_limit BIGINT NOT NULL CHECK (token_limit >= 0),
+  tokens_used BIGINT NOT NULL DEFAULT 0 CHECK (tokens_used >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  CONSTRAINT tokens_used_within_limit CHECK (tokens_used <= token_limit)
 );
 
-CREATE TABLE "entries" (
-  "id" bigserial PRIMARY KEY,
-  "account_id" bigint NOT NULL,
-  "amount" bigint NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+CREATE TABLE usage_events (
+  id BIGSERIAL PRIMARY KEY,
+  workspace_id BIGINT NOT NULL,
+  tokens BIGINT NOT NULL CHECK (tokens > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 
-CREATE TABLE "transfers" (
-  "id" bigserial PRIMARY KEY,
-  "from_account_id" bigint NOT NULL,
-  "to_account_id" bigint NOT NULL,
-  "amount" bigint NOT NULL,
-  "created_at" timestamptz NOT NULL DEFAULT (now())
+CREATE TABLE token_transfers (
+  id BIGSERIAL PRIMARY KEY,
+  from_workspace_id BIGINT NOT NULL,
+  to_workspace_id BIGINT NOT NULL,
+  tokens BIGINT NOT NULL CHECK (tokens > 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
+  CONSTRAINT token_transfers_distinct_workspaces CHECK (from_workspace_id <> to_workspace_id)
 );
 
-CREATE INDEX ON "accounts" ("owner");
+CREATE INDEX workspaces_name_idx ON workspaces (name);
 
-CREATE INDEX ON "entries" ("account_id");
+CREATE INDEX usage_events_workspace_id_idx ON usage_events (workspace_id);
 
-CREATE INDEX ON "transfers" ("from_account_id");
+CREATE INDEX token_transfers_to_workspace_id_idx ON token_transfers (to_workspace_id);
 
-CREATE INDEX ON "transfers" ("to_account_id");
+CREATE INDEX token_transfers_from_to_idx ON token_transfers (from_workspace_id, to_workspace_id);
 
-CREATE INDEX ON "transfers" ("from_account_id", "to_account_id");
+COMMENT ON COLUMN usage_events.tokens IS 'can only be negative (spent)';
+COMMENT ON COLUMN token_transfers.tokens IS 'Unused tokens moved to a colleague';
 
-COMMENT ON COLUMN "entries"."amount" IS 'can be negative or positive';
+ALTER TABLE usage_events ADD FOREIGN KEY (workspace_id) REFERENCES workspaces (id);
 
-COMMENT ON COLUMN "transfers"."amount" IS 'can be positive';
+ALTER TABLE token_transfers ADD FOREIGN KEY (from_workspace_id) REFERENCES workspaces (id);
 
-ALTER TABLE "entries" ADD FOREIGN KEY ("account_id") REFERENCES "accounts" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "transfers" ADD FOREIGN KEY ("from_account_id") REFERENCES "accounts" ("id") DEFERRABLE INITIALLY IMMEDIATE;
-
-ALTER TABLE "transfers" ADD FOREIGN KEY ("to_account_id") REFERENCES "accounts" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE token_transfers ADD FOREIGN KEY (to_workspace_id) REFERENCES workspaces (id);
