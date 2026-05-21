@@ -17,7 +17,7 @@ SELECT * FROM transfers
 ORDER BY id
 LIMIT $1 OFFSET $2;
 
--- name: UpdateTransferAmount :exec
+-- name: UpdateTransferAmount :one
 UPDATE transfers
 SET amount = $1
 WHERE id = $2
