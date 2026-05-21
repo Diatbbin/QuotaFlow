@@ -19,4 +19,7 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test
+server:
+	go run main.go
+
+.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test server
