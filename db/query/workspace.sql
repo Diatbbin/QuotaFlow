@@ -27,6 +27,12 @@ SET token_limit = token_limit + sqlc.arg(amount)
 WHERE id = sqlc.arg(id)
 RETURNING *;
 
+-- name: UpdateWorkspaceTokenLimit :one
+UPDATE workspaces
+SET token_limit = $1
+WHERE id = $2
+RETURNING *;
+
 -- name: DeleteWorkspace :exec
 DELETE FROM workspaces
 WHERE id = $1;

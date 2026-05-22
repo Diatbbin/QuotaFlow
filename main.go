@@ -5,6 +5,7 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
+	"github.com/diatbbin/QuotaFlow/util"
 	"github.com/diatbbin/QuotaFlow/server"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
 )

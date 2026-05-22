@@ -8,27 +8,27 @@ import (
 	"time"
 )
 
-type Account struct {
-	ID        int64     `json:"id"`
-	Owner     string    `json:"owner"`
-	Balance   int64     `json:"balance"`
-	Currency  string    `json:"currency"`
+type TokenTransfer struct {
+	ID              int64 `json:"id"`
+	FromWorkspaceID int64 `json:"from_workspace_id"`
+	ToWorkspaceID   int64 `json:"to_workspace_id"`
+	// Unused tokens moved to a colleague
+	Tokens    int64     `json:"tokens"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type Entry struct {
-	ID        int64 `json:"id"`
-	AccountID int64 `json:"account_id"`
-	// can be negative or positive
-	Amount    int64     `json:"amount"`
+type UsageEvent struct {
+	ID          int64 `json:"id"`
+	WorkspaceID int64 `json:"workspace_id"`
+	// can only be negative (spent)
+	Tokens    int64     `json:"tokens"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type Transfer struct {
-	ID            int64 `json:"id"`
-	FromAccountID int64 `json:"from_account_id"`
-	ToAccountID   int64 `json:"to_account_id"`
-	// can be positive
-	Amount    int64     `json:"amount"`
-	CreatedAt time.Time `json:"created_at"`
+type Workspace struct {
+	ID         int64     `json:"id"`
+	Name       string    `json:"name"`
+	TokenLimit int64     `json:"token_limit"`
+	TokensUsed int64     `json:"tokens_used"`
+	CreatedAt  time.Time `json:"created_at"`
 }

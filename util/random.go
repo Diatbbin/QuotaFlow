@@ -20,10 +20,14 @@ func RandomString(n int) string {
 	return string(result)
 }
 
-func RandomOwner() string {
+func RandomWorkspaceName() string {
 	return RandomString(8)
-}	
+}
 
-func RandomBalance() int64 {
+func RandomTokenUsed() int64 {
 	return RandomInt(0, 1000)
+}
+
+func RandomTokenLimit() int64 {
+	return RandomInt(1000, 10000)
 }

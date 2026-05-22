@@ -2,9 +2,16 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"database/sql"
+	"errors"
+	"fmt"
 )
+
+var ErrInsufficientTokens = errors.New("insufficient spare tokens to transfer")
+
+func SpareTokens(w Workspace) int64 {
+	return w.TokenLimit - w.TokensUsed
+}
 
 type Store struct {
 	*Queries
@@ -14,7 +21,7 @@ type Store struct {
 func NewStore(db *sql.DB) *Store {
 	return &Store{
 		Queries: New(db),
-		db: db,
+		db:      db,
 	}
 }
 
@@ -35,88 +42,102 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 	return tx.Commit()
 }
 
-type TransferTxParams struct {
-	FromAccountID int64 `json:"from_account_id"`
-	ToAccountID   int64 `json:"to_account_id"`
-	Amount        int64 `json:"amount"`
+type TransferTokensTxParams struct {
+	FromWorkspaceID int64 `json:"from_workspace_id"`
+	ToWorkspaceID   int64 `json:"to_workspace_id"`
+	Tokens          int64 `json:"tokens"`
 }
 
-type TransferTxResult struct {
-	Transfer    Transfer `json:"transfer"`
-	FromAccount Account  `json:"from_account"`
-	ToAccount   Account  `json:"to_account"`
-	FromEntry   Entry    `json:"from_entry"`
-	ToEntry     Entry    `json:"to_entry"`
+type TransferTokensTxResult struct {
+	Transfer      TokenTransfer `json:"transfer"`
+	FromWorkspace Workspace     `json:"from_workspace"`
+	ToWorkspace   Workspace     `json:"to_workspace"`
 }
 
-func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
-	var result TransferTxResult
+func (store *Store) TransferTokensTx(ctx context.Context, arg TransferTokensTxParams) (TransferTokensTxResult, error) {
+	var result TransferTokensTxResult
+
+	if arg.FromWorkspaceID == arg.ToWorkspaceID {
+		return result, fmt.Errorf("token sender and recipient cannot be the same")
+	}
+	if arg.Tokens <= 0 {
+		return result, fmt.Errorf("tokens tranferred must be > 0")
+	}
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
+		var from Workspace
 
-		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
-			FromAccountID: arg.FromAccountID,
-			ToAccountID:   arg.ToAccountID,
-			Amount:        arg.Amount,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		result.FromEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.FromAccountID,
-			Amount:    -arg.Amount,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		result.ToEntry, err = q.CreateEntry(ctx, CreateEntryParams{
-			AccountID: arg.ToAccountID,
-			Amount:    arg.Amount,
-		})
-
-		if err != nil {
-			return err
-		}
-
-		if  arg.FromAccountID < arg.ToAccountID {
-			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
+		if arg.FromWorkspaceID < arg.ToWorkspaceID {
+			from, _, err = lockWorkspaces(ctx, q, arg.FromWorkspaceID, arg.ToWorkspaceID)
 		} else {
-			result.ToAccount, result.FromAccount, err = addMoney(ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
+			_, from, err = lockWorkspaces(ctx, q, arg.ToWorkspaceID, arg.FromWorkspaceID)
 		}
-		
-		return nil
+		if err != nil {
+			return err
+		}
+		if SpareTokens(from) < arg.Tokens {
+			return ErrInsufficientTokens
+		}
+
+		result.Transfer, err = q.CreateTokenTransfer(ctx, CreateTokenTransferParams{
+			FromWorkspaceID: arg.FromWorkspaceID,
+			ToWorkspaceID:   arg.ToWorkspaceID,
+			Tokens:          arg.Tokens,
+		})
+		if err != nil {
+			return err
+		}
+
+		if arg.FromWorkspaceID < arg.ToWorkspaceID {
+			result.FromWorkspace, result.ToWorkspace, err = shiftTokenLimits(
+				ctx, q, arg.FromWorkspaceID, -arg.Tokens, arg.ToWorkspaceID, arg.Tokens,
+			)
+		} else {
+			result.ToWorkspace, result.FromWorkspace, err = shiftTokenLimits(
+				ctx, q, arg.ToWorkspaceID, arg.Tokens, arg.FromWorkspaceID, -arg.Tokens,
+			)
+		}
+
+		return err
 	})
 
 	return result, err
 }
 
-func addMoney(
+func lockWorkspaces(
 	ctx context.Context,
 	q *Queries,
-	accountID1 int64,
-	amount1 int64,
-	accountID2 int64,
-	amount2 int64,
-) (account1 Account, account2 Account, err error) {
-	account1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID:     accountID1,
-		Amount: amount1,
+	workspaceID1 int64,
+	workspaceID2 int64,
+) (workspace1 Workspace, workspace2 Workspace, err error) {
+	workspace1, err = q.GetWorkspaceForUpdate(ctx, workspaceID1)
+	if err != nil {
+		return
+	}
+	workspace2, err = q.GetWorkspaceForUpdate(ctx, workspaceID2)
+	return
+}
+
+func shiftTokenLimits(
+	ctx context.Context,
+	q *Queries,
+	workspaceID1 int64,
+	delta1 int64,
+	workspaceID2 int64,
+	delta2 int64,
+) (workspace1 Workspace, workspace2 Workspace, err error) {
+	workspace1, err = q.AddWorkspaceTokenLimit(ctx, AddWorkspaceTokenLimitParams{
+		ID:     workspaceID1,
+		Amount: delta1,
 	})
 	if err != nil {
-		return 
+		return
 	}
 
-	account2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID:     accountID2,
-		Amount: amount2,
+	workspace2, err = q.AddWorkspaceTokenLimit(ctx, AddWorkspaceTokenLimitParams{
+		ID:     workspaceID2,
+		Amount: delta2,
 	})
-	if err != nil {
-		return 
-	}
 	return
 }

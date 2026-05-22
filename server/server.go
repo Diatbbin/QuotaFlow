@@ -1,4 +1,4 @@
-package server 
+package server
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,7 +6,7 @@ import (
 )
 
 type Server struct {
-	store *db.Store
+	store  *db.Store
 	router *gin.Engine
 }
 
@@ -14,11 +14,11 @@ func NewServer(store *db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
-	router.POST("/accounts", server.createAccount)
-	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccounts)
-	router.PUT("/accounts/:id", server.updateAccount)
-	router.DELETE("/accounts/:id", server.deleteAccount)
+	router.POST("/workspaces", server.createWorkspace)
+	router.GET("/workspaces/:id", server.getWorkspace)
+	router.GET("/workspaces", server.listWorkspaces)
+	router.PUT("/workspaces/:id", server.updateWorkspaceTokenLimit)
+	router.DELETE("/workspaces/:id", server.deleteWorkspace)
 
 	server.router = router
 	return server
