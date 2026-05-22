@@ -162,8 +162,7 @@ func TestTransferTokensTxSameUser(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	user := createRandomUser(t)
-	tool := util.RandomTool()
-	from := createRandomAiToolForUser(t, user.ID, tool)
+	from := createRandomAiToolForUser(t, user.ID, "cursor")
 	to := createRandomAiToolForUser(t, user.ID, "copilot")
 
 	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
