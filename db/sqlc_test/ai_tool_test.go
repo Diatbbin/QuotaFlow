@@ -10,17 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomUser(t *testing.T) db.User {
-	user, err := testQueries.CreateUser(context.Background(), db.CreateUserParams{
-		Email:        util.RandomString(10) + "@test.com",
-		Username:     util.RandomString(8),
-		PasswordHash: util.RandomString(32),
-	})
-	require.NoError(t, err)
-	require.NotEmpty(t, user)
-	return user
-}
-
 func createRandomAiToolForUser(t *testing.T, userID int64, tool string) db.AiTool {
 	arg := db.CreateAiToolParams{
 		UserID:     userID,
