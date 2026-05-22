@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 
+	"github.com/lib/pq"
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
 )
