@@ -11,28 +11,28 @@ import (
 
 const createTokenTransfer = `-- name: CreateTokenTransfer :one
 INSERT INTO token_transfers (
-    from_workspace_id,
-    to_workspace_id,
+    from_ai_tool_id,
+    to_ai_tool_id,
     tokens
 ) VALUES (
     $1, $2, $3
 )
-RETURNING id, from_workspace_id, to_workspace_id, tokens, created_at
+RETURNING id, from_ai_tool_id, to_ai_tool_id, tokens, created_at
 `
 
 type CreateTokenTransferParams struct {
-	FromWorkspaceID int64 `json:"from_workspace_id"`
-	ToWorkspaceID   int64 `json:"to_workspace_id"`
-	Tokens          int64 `json:"tokens"`
+	FromAiToolID int64 `json:"from_ai_tool_id"`
+	ToAiToolID   int64 `json:"to_ai_tool_id"`
+	Tokens       int64 `json:"tokens"`
 }
 
 func (q *Queries) CreateTokenTransfer(ctx context.Context, arg CreateTokenTransferParams) (TokenTransfer, error) {
-	row := q.db.QueryRowContext(ctx, createTokenTransfer, arg.FromWorkspaceID, arg.ToWorkspaceID, arg.Tokens)
+	row := q.db.QueryRowContext(ctx, createTokenTransfer, arg.FromAiToolID, arg.ToAiToolID, arg.Tokens)
 	var i TokenTransfer
 	err := row.Scan(
 		&i.ID,
-		&i.FromWorkspaceID,
-		&i.ToWorkspaceID,
+		&i.FromAiToolID,
+		&i.ToAiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)
@@ -50,7 +50,7 @@ func (q *Queries) DeleteTokenTransfer(ctx context.Context, id int64) error {
 }
 
 const getTokenTransfer = `-- name: GetTokenTransfer :one
-SELECT id, from_workspace_id, to_workspace_id, tokens, created_at FROM token_transfers
+SELECT id, from_ai_tool_id, to_ai_tool_id, tokens, created_at FROM token_transfers
 WHERE id = $1 LIMIT 1
 `
 
@@ -59,8 +59,8 @@ func (q *Queries) GetTokenTransfer(ctx context.Context, id int64) (TokenTransfer
 	var i TokenTransfer
 	err := row.Scan(
 		&i.ID,
-		&i.FromWorkspaceID,
-		&i.ToWorkspaceID,
+		&i.FromAiToolID,
+		&i.ToAiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)
@@ -68,7 +68,7 @@ func (q *Queries) GetTokenTransfer(ctx context.Context, id int64) (TokenTransfer
 }
 
 const listTokenTransfers = `-- name: ListTokenTransfers :many
-SELECT id, from_workspace_id, to_workspace_id, tokens, created_at FROM token_transfers
+SELECT id, from_ai_tool_id, to_ai_tool_id, tokens, created_at FROM token_transfers
 ORDER BY id
 LIMIT $1 OFFSET $2
 `
@@ -89,8 +89,8 @@ func (q *Queries) ListTokenTransfers(ctx context.Context, arg ListTokenTransfers
 		var i TokenTransfer
 		if err := rows.Scan(
 			&i.ID,
-			&i.FromWorkspaceID,
-			&i.ToWorkspaceID,
+			&i.FromAiToolID,
+			&i.ToAiToolID,
 			&i.Tokens,
 			&i.CreatedAt,
 		); err != nil {
@@ -111,7 +111,7 @@ const updateTokenTransferTokens = `-- name: UpdateTokenTransferTokens :one
 UPDATE token_transfers
 SET tokens = $1
 WHERE id = $2
-RETURNING id, from_workspace_id, to_workspace_id, tokens, created_at
+RETURNING id, from_ai_tool_id, to_ai_tool_id, tokens, created_at
 `
 
 type UpdateTokenTransferTokensParams struct {
@@ -124,8 +124,8 @@ func (q *Queries) UpdateTokenTransferTokens(ctx context.Context, arg UpdateToken
 	var i TokenTransfer
 	err := row.Scan(
 		&i.ID,
-		&i.FromWorkspaceID,
-		&i.ToWorkspaceID,
+		&i.FromAiToolID,
+		&i.ToAiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)

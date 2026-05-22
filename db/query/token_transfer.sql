@@ -1,7 +1,7 @@
 -- name: CreateTokenTransfer :one
 INSERT INTO token_transfers (
-    from_workspace_id,
-    to_workspace_id,
+    from_ai_tool_id,
+    to_ai_tool_id,
     tokens
 ) VALUES (
     $1, $2, $3

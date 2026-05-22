@@ -8,32 +8,34 @@ import (
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
 )
 
-type workspaceResponse struct {
-	Workspace   db.Workspace `json:"workspace"`
-	SpareTokens int64        `json:"spare_tokens"`
+type aiToolResponse struct {
+	AiTool      db.AiTool `json:"ai_tool"`
+	SpareTokens int64     `json:"spare_tokens"`
 }
 
-func toWorkspaceResponse(w db.Workspace) workspaceResponse {
-	return workspaceResponse{
-		Workspace:   w,
-		SpareTokens: db.SpareTokens(w),
+func toAiToolResponse(a db.AiTool) aiToolResponse {
+	return aiToolResponse{
+		AiTool:      a,
+		SpareTokens: db.SpareTokens(a),
 	}
 }
 
-type createWorkspaceRequest struct {
-	Name       string `json:"name" binding:"required"`
+type createAiToolRequest struct {
+	UserID     int64  `json:"user_id" binding:"required,min=1"`
+	Tool       string `json:"tool" binding:"required"`
 	TokenLimit int64  `json:"token_limit" binding:"required,min=1"`
 }
 
-func (server *Server) createWorkspace(ctx *gin.Context) {
-	var req createWorkspaceRequest
+func (server *Server) createAiTool(ctx *gin.Context) {
+	var req createAiToolRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	workspace, err := server.store.CreateWorkspace(ctx, db.CreateWorkspaceParams{
-		Name:       req.Name,
+	aiTool, err := server.store.CreateAiTool(ctx, db.CreateAiToolParams{
+		UserID:     req.UserID,
+		Tool:       req.Tool,
 		TokenLimit: req.TokenLimit,
 	})
 	if err != nil {
@@ -41,21 +43,21 @@ func (server *Server) createWorkspace(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toWorkspaceResponse(workspace))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
 }
 
-type getWorkspaceRequest struct {
+type getAiToolRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-func (server *Server) getWorkspace(ctx *gin.Context) {
-	var req getWorkspaceRequest
+func (server *Server) getAiTool(ctx *gin.Context) {
+	var req getAiToolRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	workspace, err := server.store.GetWorkspace(ctx, req.ID)
+	aiTool, err := server.store.GetAiTool(ctx, req.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
@@ -65,22 +67,22 @@ func (server *Server) getWorkspace(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toWorkspaceResponse(workspace))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
 }
 
-type listWorkspacesRequest struct {
+type listAiToolsRequest struct {
 	PageID   int32 `form:"page_id" binding:"required,min=1"`
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
 }
 
-func (server *Server) listWorkspaces(ctx *gin.Context) {
-	var req listWorkspacesRequest
+func (server *Server) listAiTools(ctx *gin.Context) {
+	var req listAiToolsRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	workspaces, err := server.store.ListWorkspaces(ctx, db.ListWorkspacesParams{
+	aiTools, err := server.store.ListAiTools(ctx, db.ListAiToolsParams{
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	})
@@ -89,36 +91,36 @@ func (server *Server) listWorkspaces(ctx *gin.Context) {
 		return
 	}
 
-	resp := make([]workspaceResponse, len(workspaces))
-	for i, w := range workspaces {
-		resp[i] = toWorkspaceResponse(w)
+	resp := make([]aiToolResponse, len(aiTools))
+	for i, a := range aiTools {
+		resp[i] = toAiToolResponse(a)
 	}
 
 	ctx.JSON(http.StatusOK, resp)
 }
 
-type updateWorkspaceURIRequest struct {
+type updateAiToolURIRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-type updateWorkspaceTokenLimitRequest struct {
+type updateAiToolTokenLimitRequest struct {
 	TokenLimit int64 `json:"token_limit" binding:"required,min=0"`
 }
 
-func (server *Server) updateWorkspaceTokenLimit(ctx *gin.Context) {
-	var uriReq updateWorkspaceURIRequest
+func (server *Server) updateAiToolTokenLimit(ctx *gin.Context) {
+	var uriReq updateAiToolURIRequest
 	if err := ctx.ShouldBindUri(&uriReq); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	var req updateWorkspaceTokenLimitRequest
+	var req updateAiToolTokenLimitRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	workspace, err := server.store.UpdateWorkspaceTokenLimit(ctx, db.UpdateWorkspaceTokenLimitParams{
+	aiTool, err := server.store.UpdateAiToolTokenLimit(ctx, db.UpdateAiToolTokenLimitParams{
 		TokenLimit: req.TokenLimit,
 		ID:         uriReq.ID,
 	})
@@ -127,27 +129,27 @@ func (server *Server) updateWorkspaceTokenLimit(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toWorkspaceResponse(workspace))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
 }
 
-type deleteWorkspaceURIRequest struct {
+type deleteAiToolURIRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
-func (server *Server) deleteWorkspace(ctx *gin.Context) {
-	var req deleteWorkspaceURIRequest
+func (server *Server) deleteAiTool(ctx *gin.Context) {
+	var req deleteAiToolURIRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
 
-	err := server.store.DeleteWorkspace(ctx, req.ID)
+	err := server.store.DeleteAiTool(ctx, req.ID)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "workspace deleted successfully",
+		"message": "ai tool deleted successfully",
 	})
 }

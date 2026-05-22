@@ -20,8 +20,9 @@ func RandomString(n int) string {
 	return string(result)
 }
 
-func RandomWorkspaceName() string {
-	return RandomString(8)
+func RandomTool() string {
+	tools := []string{"cursor", "copilot", "chatgpt"}
+	return tools[rng.Intn(len(tools))]
 }
 
 func RandomTokenUsed() int64 {

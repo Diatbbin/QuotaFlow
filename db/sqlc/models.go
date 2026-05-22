@@ -8,27 +8,36 @@ import (
 	"time"
 )
 
+type AiTool struct {
+	ID         int64     `json:"id"`
+	UserID     int64     `json:"user_id"`
+	Tool       string    `json:"tool"`
+	TokenLimit int64     `json:"token_limit"`
+	TokensUsed int64     `json:"tokens_used"`
+	CreatedAt  time.Time `json:"created_at"`
+}
+
 type TokenTransfer struct {
-	ID              int64 `json:"id"`
-	FromWorkspaceID int64 `json:"from_workspace_id"`
-	ToWorkspaceID   int64 `json:"to_workspace_id"`
+	ID           int64 `json:"id"`
+	FromAiToolID int64 `json:"from_ai_tool_id"`
+	ToAiToolID   int64 `json:"to_ai_tool_id"`
 	// Unused tokens moved to a colleague
 	Tokens    int64     `json:"tokens"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
 type UsageEvent struct {
-	ID          int64 `json:"id"`
-	WorkspaceID int64 `json:"workspace_id"`
+	ID       int64 `json:"id"`
+	AiToolID int64 `json:"ai_tool_id"`
 	// can only be negative (spent)
 	Tokens    int64     `json:"tokens"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type Workspace struct {
-	ID         int64     `json:"id"`
-	Name       string    `json:"name"`
-	TokenLimit int64     `json:"token_limit"`
-	TokensUsed int64     `json:"tokens_used"`
-	CreatedAt  time.Time `json:"created_at"`
+type User struct {
+	ID           int64     `json:"id"`
+	Email        string    `json:"email"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	CreatedAt    time.Time `json:"created_at"`
 }

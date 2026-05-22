@@ -1,6 +1,15 @@
-CREATE TABLE workspaces (
+CREATE TABLE users (
   id BIGSERIAL PRIMARY KEY,
-  name VARCHAR NOT NULL,
+  email VARCHAR NOT NULL UNIQUE,
+  username VARCHAR NOT NULL UNIQUE,
+  password_hash VARCHAR NOT NULL, 
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE ai_tools (
+  id BIGSERIAL PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  tool VARCHAR NOT NULL,
   token_limit BIGINT NOT NULL CHECK (token_limit >= 0),
   tokens_used BIGINT NOT NULL DEFAULT 0 CHECK (tokens_used >= 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
@@ -9,33 +18,35 @@ CREATE TABLE workspaces (
 
 CREATE TABLE usage_events (
   id BIGSERIAL PRIMARY KEY,
-  workspace_id BIGINT NOT NULL,
+  ai_tool_id BIGINT NOT NULL,
   tokens BIGINT NOT NULL CHECK (tokens > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE token_transfers (
   id BIGSERIAL PRIMARY KEY,
-  from_workspace_id BIGINT NOT NULL,
-  to_workspace_id BIGINT NOT NULL,
+  from_ai_tool_id BIGINT NOT NULL,
+  to_ai_tool_id BIGINT NOT NULL,
   tokens BIGINT NOT NULL CHECK (tokens > 0),
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
-  CONSTRAINT token_transfers_distinct_workspaces CHECK (from_workspace_id <> to_workspace_id)
+  CONSTRAINT token_transfers_distinct_ai_tools CHECK (from_ai_tool_id <> to_ai_tool_id)
 );
 
-CREATE INDEX workspaces_name_idx ON workspaces (name);
+CREATE UNIQUE INDEX ai_tools_user_tool_idx ON ai_tools (user_id, tool);
 
-CREATE INDEX usage_events_workspace_id_idx ON usage_events (workspace_id);
+CREATE INDEX usage_events_ai_tool_id_idx ON usage_events (ai_tool_id);
 
-CREATE INDEX token_transfers_to_workspace_id_idx ON token_transfers (to_workspace_id);
+CREATE INDEX token_transfers_to_ai_tool_id_idx ON token_transfers (to_ai_tool_id);
 
-CREATE INDEX token_transfers_from_to_idx ON token_transfers (from_workspace_id, to_workspace_id);
+CREATE INDEX token_transfers_from_to_idx ON token_transfers (from_ai_tool_id, to_ai_tool_id);
 
 COMMENT ON COLUMN usage_events.tokens IS 'can only be negative (spent)';
 COMMENT ON COLUMN token_transfers.tokens IS 'Unused tokens moved to a colleague';
 
-ALTER TABLE usage_events ADD FOREIGN KEY (workspace_id) REFERENCES workspaces (id);
+ALTER TABLE ai_tools ADD FOREIGN KEY (user_id) REFERENCES users (id);
 
-ALTER TABLE token_transfers ADD FOREIGN KEY (from_workspace_id) REFERENCES workspaces (id);
+ALTER TABLE usage_events ADD FOREIGN KEY (ai_tool_id) REFERENCES ai_tools (id);
 
-ALTER TABLE token_transfers ADD FOREIGN KEY (to_workspace_id) REFERENCES workspaces (id);
+ALTER TABLE token_transfers ADD FOREIGN KEY (from_ai_tool_id) REFERENCES ai_tools (id);
+
+ALTER TABLE token_transfers ADD FOREIGN KEY (to_ai_tool_id) REFERENCES ai_tools (id);

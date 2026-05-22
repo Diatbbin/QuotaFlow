@@ -13,19 +13,11 @@ import (
 func TestTransferTokensTx(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	workspace1, err := testQueries.CreateWorkspace(context.Background(), db.CreateWorkspaceParams{
-		Name:       util.RandomWorkspaceName(),
-		TokenLimit: util.RandomTokenLimit(),
-	})
-	require.NoError(t, err)
+	tool := util.RandomTool()
+	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
 
-	workspace2, err := testQueries.CreateWorkspace(context.Background(), db.CreateWorkspaceParams{
-		Name:       util.RandomWorkspaceName(),
-		TokenLimit: util.RandomTokenLimit(),
-	})
-	require.NoError(t, err)
-
-	fmt.Printf(">> Initial spare tokens: w1: %v, w2: %v\n", db.SpareTokens(workspace1), db.SpareTokens(workspace2))
+	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
 	n := 10
 	tokens := int64(10)
@@ -36,9 +28,9 @@ func TestTransferTokensTx(t *testing.T) {
 	for i := 0; i < n; i++ {
 		go func() {
 			result, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
-				FromWorkspaceID: workspace1.ID,
-				ToWorkspaceID:   workspace2.ID,
-				Tokens:          tokens,
+				FromAiToolID: aiTool1.ID,
+				ToAiToolID:   aiTool2.ID,
+				Tokens:       tokens,
 			})
 
 			errs <- err
@@ -57,8 +49,8 @@ func TestTransferTokensTx(t *testing.T) {
 
 		transfer := result.Transfer
 		require.NotEmpty(t, transfer)
-		require.Equal(t, workspace1.ID, transfer.FromWorkspaceID)
-		require.Equal(t, workspace2.ID, transfer.ToWorkspaceID)
+		require.Equal(t, aiTool1.ID, transfer.FromAiToolID)
+		require.Equal(t, aiTool2.ID, transfer.ToAiToolID)
 		require.Equal(t, tokens, transfer.Tokens)
 		require.NotZero(t, transfer.ID)
 		require.NotZero(t, transfer.CreatedAt)
@@ -66,17 +58,17 @@ func TestTransferTokensTx(t *testing.T) {
 		_, err = store.GetTokenTransfer(context.Background(), transfer.ID)
 		require.NoError(t, err)
 
-		from := result.FromWorkspace
+		from := result.FromAiTool
 		require.NotEmpty(t, from)
-		require.Equal(t, workspace1.ID, from.ID)
+		require.Equal(t, aiTool1.ID, from.ID)
 
-		to := result.ToWorkspace
+		to := result.ToAiTool
 		require.NotEmpty(t, to)
-		require.Equal(t, workspace2.ID, to.ID)
+		require.Equal(t, aiTool2.ID, to.ID)
 
-		fmt.Printf(">> after tx spare tokens: w1: %v, w2: %v\n", db.SpareTokens(from), db.SpareTokens(to))
-		diff1 := db.SpareTokens(workspace1) - db.SpareTokens(from)
-		diff2 := db.SpareTokens(to) - db.SpareTokens(workspace2)
+		fmt.Printf(">> after tx spare tokens: t1: %v, t2: %v\n", db.SpareTokens(from), db.SpareTokens(to))
+		diff1 := db.SpareTokens(aiTool1) - db.SpareTokens(from)
+		diff2 := db.SpareTokens(to) - db.SpareTokens(aiTool2)
 		require.Equal(t, diff1, diff2)
 		require.True(t, diff1 > 0)
 		require.True(t, diff1%tokens == 0)
@@ -87,24 +79,25 @@ func TestTransferTokensTx(t *testing.T) {
 		existed[k] = true
 	}
 
-	updated1, err := store.GetWorkspace(context.Background(), workspace1.ID)
+	updated1, err := store.GetAiTool(context.Background(), aiTool1.ID)
 	require.NoError(t, err)
 
-	updated2, err := store.GetWorkspace(context.Background(), workspace2.ID)
+	updated2, err := store.GetAiTool(context.Background(), aiTool2.ID)
 	require.NoError(t, err)
 
-	fmt.Printf(">> Final spare tokens: w1: %v, w2: %v\n", db.SpareTokens(updated1), db.SpareTokens(updated2))
-	require.Equal(t, db.SpareTokens(workspace1)-int64(n)*tokens, db.SpareTokens(updated1))
-	require.Equal(t, db.SpareTokens(workspace2)+int64(n)*tokens, db.SpareTokens(updated2))
+	fmt.Printf(">> Final spare tokens: t1: %v, t2: %v\n", db.SpareTokens(updated1), db.SpareTokens(updated2))
+	require.Equal(t, db.SpareTokens(aiTool1)-int64(n)*tokens, db.SpareTokens(updated1))
+	require.Equal(t, db.SpareTokens(aiTool2)+int64(n)*tokens, db.SpareTokens(updated2))
 }
 
 func TestTransferTokensTxDeadlock(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	workspace1 := createRandomWorkspace(t)
-	workspace2 := createRandomWorkspace(t)
+	tool := util.RandomTool()
+	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
 
-	fmt.Printf(">> Initial spare tokens: w1: %v, w2: %v\n", db.SpareTokens(workspace1), db.SpareTokens(workspace2))
+	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
 	n := 20
 	tokens := int64(10)
@@ -112,19 +105,19 @@ func TestTransferTokensTxDeadlock(t *testing.T) {
 	errs := make(chan error)
 
 	for i := 0; i < n; i++ {
-		fromID := workspace1.ID
-		toID := workspace2.ID
+		fromID := aiTool1.ID
+		toID := aiTool2.ID
 
 		if i%2 == 1 {
-			fromID = workspace2.ID
-			toID = workspace1.ID
+			fromID = aiTool2.ID
+			toID = aiTool1.ID
 		}
 
 		go func() {
 			_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
-				FromWorkspaceID: fromID,
-				ToWorkspaceID:   toID,
-				Tokens:          tokens,
+				FromAiToolID: fromID,
+				ToAiToolID:   toID,
+				Tokens:       tokens,
 			})
 			errs <- err
 		}()
@@ -135,31 +128,62 @@ func TestTransferTokensTxDeadlock(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	updated1, err := store.GetWorkspace(context.Background(), workspace1.ID)
+	updated1, err := store.GetAiTool(context.Background(), aiTool1.ID)
 	require.NoError(t, err)
 
-	updated2, err := store.GetWorkspace(context.Background(), workspace2.ID)
+	updated2, err := store.GetAiTool(context.Background(), aiTool2.ID)
 	require.NoError(t, err)
 
-	fmt.Printf(">> Final spare tokens: w1: %v, w2: %v\n", db.SpareTokens(updated1), db.SpareTokens(updated2))
-	require.Equal(t, db.SpareTokens(workspace1), db.SpareTokens(updated1))
-	require.Equal(t, db.SpareTokens(workspace2), db.SpareTokens(updated2))
+	fmt.Printf(">> Final spare tokens: t1: %v, t2: %v\n", db.SpareTokens(updated1), db.SpareTokens(updated2))
+	require.Equal(t, db.SpareTokens(aiTool1), db.SpareTokens(updated1))
+	require.Equal(t, db.SpareTokens(aiTool2), db.SpareTokens(updated2))
 }
 
 func TestTransferTokensTxInsufficientSpare(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	sender := createRandomWorkspace(t)
-	recipient := createRandomWorkspace(t)
+	tool := util.RandomTool()
+	sender := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	recipient := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
 
 	_, err := testDB.ExecContext(context.Background(),
-		`UPDATE workspaces SET tokens_used = token_limit WHERE id = $1`, sender.ID)
+		`UPDATE ai_tools SET tokens_used = token_limit WHERE id = $1`, sender.ID)
 	require.NoError(t, err)
 
 	_, err = store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
-		FromWorkspaceID: sender.ID,
-		ToWorkspaceID:   recipient.ID,
-		Tokens:          1,
+		FromAiToolID: sender.ID,
+		ToAiToolID:   recipient.ID,
+		Tokens:       1,
 	})
 	require.ErrorIs(t, err, db.ErrInsufficientTokens)
+}
+
+func TestTransferTokensTxSameUser(t *testing.T) {
+	store := db.NewStore(testDB)
+
+	user := createRandomUser(t)
+	tool := util.RandomTool()
+	from := createRandomAiToolForUser(t, user.ID, tool)
+	to := createRandomAiToolForUser(t, user.ID, "copilot")
+
+	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
+		FromAiToolID: from.ID,
+		ToAiToolID:   to.ID,
+		Tokens:       1,
+	})
+	require.ErrorIs(t, err, db.ErrTransferSameUser)
+}
+
+func TestTransferTokensTxDifferentAiTool(t *testing.T) {
+	store := db.NewStore(testDB)
+
+	from := createRandomAiToolForUser(t, createRandomUser(t).ID, "cursor")
+	to := createRandomAiToolForUser(t, createRandomUser(t).ID, "copilot")
+
+	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
+		FromAiToolID: from.ID,
+		ToAiToolID:   to.ID,
+		Tokens:       1,
+	})
+	require.ErrorIs(t, err, db.ErrTransferDifferentAiTool)
 }

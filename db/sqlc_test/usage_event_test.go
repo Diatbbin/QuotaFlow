@@ -12,15 +12,15 @@ import (
 
 func createRandomUsageEvent(t *testing.T) db.UsageEvent {
 	arg := db.CreateUsageEventParams{
-		WorkspaceID: createRandomWorkspace(t).ID,
-		Tokens:      util.RandomTokenUsed() + 1,
+		AiToolID: createRandomAiTool(t).ID,
+		Tokens:   util.RandomTokenUsed() + 1,
 	}
 
 	event, err := testQueries.CreateUsageEvent(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, event)
 
-	require.Equal(t, arg.WorkspaceID, event.WorkspaceID)
+	require.Equal(t, arg.AiToolID, event.AiToolID)
 	require.Equal(t, arg.Tokens, event.Tokens)
 
 	require.NotZero(t, event.ID)
@@ -41,7 +41,7 @@ func TestGetUsageEvent(t *testing.T) {
 	require.NotEmpty(t, event2)
 
 	require.Equal(t, event1.ID, event2.ID)
-	require.Equal(t, event1.WorkspaceID, event2.WorkspaceID)
+	require.Equal(t, event1.AiToolID, event2.AiToolID)
 	require.Equal(t, event1.Tokens, event2.Tokens)
 	require.WithinDuration(t, event1.CreatedAt, event2.CreatedAt, 0)
 }
@@ -59,7 +59,7 @@ func TestUpdateUsageEventTokens(t *testing.T) {
 	require.NotEmpty(t, event2)
 
 	require.Equal(t, event1.ID, event2.ID)
-	require.Equal(t, event1.WorkspaceID, event2.WorkspaceID)
+	require.Equal(t, event1.AiToolID, event2.AiToolID)
 	require.Equal(t, arg.Tokens, event2.Tokens)
 	require.WithinDuration(t, event1.CreatedAt, event2.CreatedAt, 0)
 }

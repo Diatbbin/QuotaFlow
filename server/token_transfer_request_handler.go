@@ -11,22 +11,22 @@ import (
 
 type tokenTransferResponse struct {
 	TokenTransfer db.TokenTransfer `json:"token_transfer"`
-	FromWorkspace workspaceResponse  `json:"from_workspace"`
-	ToWorkspace   workspaceResponse  `json:"to_workspace"`
+	FromAiTool    aiToolResponse     `json:"from_ai_tool"`
+	ToAiTool      aiToolResponse     `json:"to_ai_tool"`
 }
 
-func toTokenTransferResponse(t db.TokenTransfer, from, to db.Workspace) tokenTransferResponse {
+func toTokenTransferResponse(t db.TokenTransfer, from, to db.AiTool) tokenTransferResponse {
 	return tokenTransferResponse{
 		TokenTransfer: t,
-		FromWorkspace: toWorkspaceResponse(from),
-		ToWorkspace:   toWorkspaceResponse(to),
+		FromAiTool:    toAiToolResponse(from),
+		ToAiTool:      toAiToolResponse(to),
 	}
 }
 
 type createTokenTransferRequest struct {
-	FromWorkspaceID int64 `json:"from_workspace_id" binding:"required,min=1"`
-	ToWorkspaceID   int64 `json:"to_workspace_id" binding:"required,min=1"`
-	Tokens          int64 `json:"tokens" binding:"required,min=1"`
+	FromAiToolID int64 `json:"from_ai_tool_id" binding:"required,min=1"`
+	ToAiToolID   int64 `json:"to_ai_tool_id" binding:"required,min=1"`
+	Tokens       int64 `json:"tokens" binding:"required,min=1"`
 }
 
 func (server *Server) createTokenTransfer(ctx *gin.Context) {
@@ -36,29 +36,32 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if (!server.validateTokenTransfer(ctx, req.FromWorkspaceID) || !server.validateTokenTransfer(ctx, req.ToWorkspaceID)) {
+	if !server.validateTokenTransfer(ctx, req.FromAiToolID) || !server.validateTokenTransfer(ctx, req.ToAiToolID) {
 		return
 	}
 
 	result, err := server.store.TransferTokensTx(ctx, db.TransferTokensTxParams{
-		FromWorkspaceID: req.FromWorkspaceID,
-		ToWorkspaceID:   req.ToWorkspaceID,
-		Tokens:          req.Tokens,
+		FromAiToolID: req.FromAiToolID,
+		ToAiToolID:   req.ToAiToolID,
+		Tokens:       req.Tokens,
 	})
 	if err != nil {
-		if errors.Is(err, db.ErrInsufficientTokens) {
+		switch {
+		case errors.Is(err, db.ErrInsufficientTokens),
+			errors.Is(err, db.ErrTransferSameUser),
+			errors.Is(err, db.ErrTransferDifferentAiTool):
 			ctx.JSON(http.StatusBadRequest, errorResponse(err))
-			return
+		default:
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toTokenTransferResponse(result.Transfer, result.FromWorkspace, result.ToWorkspace))
+	ctx.JSON(http.StatusOK, toTokenTransferResponse(result.Transfer, result.FromAiTool, result.ToAiTool))
 }
 
-func (server *Server) validateTokenTransfer(ctx *gin.Context, workspaceID int64) bool {
-	_, err := server.store.GetWorkspace(ctx, workspaceID)
+func (server *Server) validateTokenTransfer(ctx *gin.Context, aiToolID int64) bool {
+	_, err := server.store.GetAiTool(ctx, aiToolID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))

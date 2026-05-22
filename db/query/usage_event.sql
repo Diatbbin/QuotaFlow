@@ -1,6 +1,6 @@
 -- name: CreateUsageEvent :one
 INSERT INTO usage_events (
-    workspace_id,
+    ai_tool_id,
     tokens
 ) VALUES (
     $1, $2

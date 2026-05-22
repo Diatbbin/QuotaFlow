@@ -17,7 +17,7 @@ sqlc:
 	sqlc generate
 
 test:
-	go test -v -cover ./...
+	go test -v -cover -coverpkg=./db/sqlc/... ./db/sqlc_test/...
 
 server:
 	go run main.go

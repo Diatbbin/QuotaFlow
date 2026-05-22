@@ -14,11 +14,11 @@ func NewServer(store *db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 
-	router.POST("/workspaces", server.createWorkspace)
-	router.GET("/workspaces/:id", server.getWorkspace)
-	router.GET("/workspaces", server.listWorkspaces)
-	router.PUT("/workspaces/:id", server.updateWorkspaceTokenLimit)
-	router.DELETE("/workspaces/:id", server.deleteWorkspace)
+	router.POST("/ai-tools", server.createAiTool)
+	router.GET("/ai-tools/:id", server.getAiTool)
+	router.GET("/ai-tools", server.listAiTools)
+	router.PUT("/ai-tools/:id", server.updateAiToolTokenLimit)
+	router.DELETE("/ai-tools/:id", server.deleteAiTool)
 
 	router.POST("/token-transfers", server.createTokenTransfer)
 

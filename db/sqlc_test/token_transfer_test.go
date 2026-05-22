@@ -11,18 +11,22 @@ import (
 )
 
 func createRandomTokenTransfer(t *testing.T) db.TokenTransfer {
+	tool := util.RandomTool()
+	from := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	to := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+
 	arg := db.CreateTokenTransferParams{
-		FromWorkspaceID: createRandomWorkspace(t).ID,
-		ToWorkspaceID:   createRandomWorkspace(t).ID,
-		Tokens:          util.RandomTokenUsed() + 1,
+		FromAiToolID: from.ID,
+		ToAiToolID:   to.ID,
+		Tokens:       util.RandomTokenUsed() + 1,
 	}
 
 	transfer, err := testQueries.CreateTokenTransfer(context.Background(), arg)
 	require.NoError(t, err)
 	require.NotEmpty(t, transfer)
 
-	require.Equal(t, arg.FromWorkspaceID, transfer.FromWorkspaceID)
-	require.Equal(t, arg.ToWorkspaceID, transfer.ToWorkspaceID)
+	require.Equal(t, arg.FromAiToolID, transfer.FromAiToolID)
+	require.Equal(t, arg.ToAiToolID, transfer.ToAiToolID)
 	require.Equal(t, arg.Tokens, transfer.Tokens)
 
 	require.NotZero(t, transfer.ID)
@@ -43,8 +47,8 @@ func TestGetTokenTransfer(t *testing.T) {
 	require.NotEmpty(t, transfer2)
 
 	require.Equal(t, transfer1.ID, transfer2.ID)
-	require.Equal(t, transfer1.FromWorkspaceID, transfer2.FromWorkspaceID)
-	require.Equal(t, transfer1.ToWorkspaceID, transfer2.ToWorkspaceID)
+	require.Equal(t, transfer1.FromAiToolID, transfer2.FromAiToolID)
+	require.Equal(t, transfer1.ToAiToolID, transfer2.ToAiToolID)
 	require.Equal(t, transfer1.Tokens, transfer2.Tokens)
 	require.WithinDuration(t, transfer1.CreatedAt, transfer2.CreatedAt, 0)
 }
@@ -62,8 +66,8 @@ func TestUpdateTokenTransferTokens(t *testing.T) {
 	require.NotEmpty(t, transfer2)
 
 	require.Equal(t, transfer1.ID, transfer2.ID)
-	require.Equal(t, transfer1.FromWorkspaceID, transfer2.FromWorkspaceID)
-	require.Equal(t, transfer1.ToWorkspaceID, transfer2.ToWorkspaceID)
+	require.Equal(t, transfer1.FromAiToolID, transfer2.FromAiToolID)
+	require.Equal(t, transfer1.ToAiToolID, transfer2.ToAiToolID)
 	require.Equal(t, arg.Tokens, transfer2.Tokens)
 	require.WithinDuration(t, transfer1.CreatedAt, transfer2.CreatedAt, 0)
 }

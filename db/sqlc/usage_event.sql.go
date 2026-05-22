@@ -11,25 +11,25 @@ import (
 
 const createUsageEvent = `-- name: CreateUsageEvent :one
 INSERT INTO usage_events (
-    workspace_id,
+    ai_tool_id,
     tokens
 ) VALUES (
     $1, $2
 )
-RETURNING id, workspace_id, tokens, created_at
+RETURNING id, ai_tool_id, tokens, created_at
 `
 
 type CreateUsageEventParams struct {
-	WorkspaceID int64 `json:"workspace_id"`
-	Tokens      int64 `json:"tokens"`
+	AiToolID int64 `json:"ai_tool_id"`
+	Tokens   int64 `json:"tokens"`
 }
 
 func (q *Queries) CreateUsageEvent(ctx context.Context, arg CreateUsageEventParams) (UsageEvent, error) {
-	row := q.db.QueryRowContext(ctx, createUsageEvent, arg.WorkspaceID, arg.Tokens)
+	row := q.db.QueryRowContext(ctx, createUsageEvent, arg.AiToolID, arg.Tokens)
 	var i UsageEvent
 	err := row.Scan(
 		&i.ID,
-		&i.WorkspaceID,
+		&i.AiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)
@@ -47,7 +47,7 @@ func (q *Queries) DeleteUsageEvent(ctx context.Context, id int64) error {
 }
 
 const getUsageEvent = `-- name: GetUsageEvent :one
-SELECT id, workspace_id, tokens, created_at FROM usage_events
+SELECT id, ai_tool_id, tokens, created_at FROM usage_events
 WHERE id = $1 LIMIT 1
 `
 
@@ -56,7 +56,7 @@ func (q *Queries) GetUsageEvent(ctx context.Context, id int64) (UsageEvent, erro
 	var i UsageEvent
 	err := row.Scan(
 		&i.ID,
-		&i.WorkspaceID,
+		&i.AiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)
@@ -64,7 +64,7 @@ func (q *Queries) GetUsageEvent(ctx context.Context, id int64) (UsageEvent, erro
 }
 
 const listUsageEvents = `-- name: ListUsageEvents :many
-SELECT id, workspace_id, tokens, created_at FROM usage_events
+SELECT id, ai_tool_id, tokens, created_at FROM usage_events
 ORDER BY id
 LIMIT $1 OFFSET $2
 `
@@ -85,7 +85,7 @@ func (q *Queries) ListUsageEvents(ctx context.Context, arg ListUsageEventsParams
 		var i UsageEvent
 		if err := rows.Scan(
 			&i.ID,
-			&i.WorkspaceID,
+			&i.AiToolID,
 			&i.Tokens,
 			&i.CreatedAt,
 		); err != nil {
@@ -106,7 +106,7 @@ const updateUsageEventTokens = `-- name: UpdateUsageEventTokens :one
 UPDATE usage_events
 SET tokens = $1
 WHERE id = $2
-RETURNING id, workspace_id, tokens, created_at
+RETURNING id, ai_tool_id, tokens, created_at
 `
 
 type UpdateUsageEventTokensParams struct {
@@ -119,7 +119,7 @@ func (q *Queries) UpdateUsageEventTokens(ctx context.Context, arg UpdateUsageEve
 	var i UsageEvent
 	err := row.Scan(
 		&i.ID,
-		&i.WorkspaceID,
+		&i.AiToolID,
 		&i.Tokens,
 		&i.CreatedAt,
 	)
