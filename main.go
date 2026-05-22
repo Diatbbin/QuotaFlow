@@ -22,7 +22,11 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
-	server := server.NewServer(store)
+	server, err := server.NewServer(store, config)
+	if err != nil {
+		log.Fatal("Error creating server:", err)
+	}
+
 	err = server.Start(config.ServerAddress)
 
 	if err != nil {
