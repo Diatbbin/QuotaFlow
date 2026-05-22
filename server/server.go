@@ -20,6 +20,8 @@ func NewServer(store *db.Store) *Server {
 	router.PUT("/workspaces/:id", server.updateWorkspaceTokenLimit)
 	router.DELETE("/workspaces/:id", server.deleteWorkspace)
 
+	router.POST("/token-transfers", server.createTokenTransfer)
+
 	server.router = router
 	return server
 }
