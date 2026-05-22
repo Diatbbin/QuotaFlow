@@ -16,10 +16,18 @@ migrate-down:
 sqlc:
 	sqlc generate
 
-test:
-	go test -v -cover -coverpkg=./db/sqlc/... -coverpkg=./util/... ./db/sqlc_test/... ./util/...
+test: test-sqlc test-auth test-util
+
+test-sqlc:
+	go test -v -cover -coverpkg=./db/sqlc/... ./db/sqlc_test/... 
+
+test-auth:
+	go test -v -cover -coverpkg=./auth/... ./auth/...
+
+test-util:
+	go test -v -cover -coverpkg=./util/... ./util/...
 
 server:
 	go run main.go
 
-.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test server
+.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test test-sqlc test-auth test-util server
