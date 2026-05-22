@@ -3,6 +3,7 @@ package util
 import (
 	"math/rand"
 	"time"
+	"fmt"
 )
 
 var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -31,4 +32,8 @@ func RandomTokenUsed() int64 {
 
 func RandomTokenLimit() int64 {
 	return RandomInt(1000, 10000)
+}
+
+func RandomEmail() string {
+	return fmt.Sprintf("%s@test.com", RandomString(8))
 }
