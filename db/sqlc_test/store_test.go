@@ -6,16 +6,16 @@ import (
 	"testing"
 
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
-	"github.com/diatbbin/QuotaFlow/util"
 	"github.com/stretchr/testify/require"
+	"github.com/diatbbin/QuotaFlow/util"
 )
 
 func TestTransferTokensTx(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	tool := util.RandomTool()
-	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
-	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	aiTool1 := createAiToolForRandomUser(t, tool)
+	aiTool2 := createAiToolForRandomUser(t, tool)
 
 	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
@@ -93,9 +93,9 @@ func TestTransferTokensTx(t *testing.T) {
 func TestTransferTokensTxDeadlock(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	tool := util.RandomTool()
-	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
-	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	tool := util.RandomTool()	
+	aiTool1 := createAiToolForRandomUser(t, tool)
+	aiTool2 := createAiToolForRandomUser(t, tool)
 
 	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
@@ -143,8 +143,8 @@ func TestTransferTokensTxInsufficientSpare(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	tool := util.RandomTool()
-	sender := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
-	recipient := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	sender := createAiToolForRandomUser(t, tool)
+	recipient := createAiToolForRandomUser(t, tool)
 
 	_, err := testDB.ExecContext(context.Background(),
 		`UPDATE ai_tools SET tokens_used = token_limit WHERE id = $1`, sender.ID)
@@ -161,9 +161,9 @@ func TestTransferTokensTxInsufficientSpare(t *testing.T) {
 func TestTransferTokensTxSameUser(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	user := createRandomUser(t)
-	from := createRandomAiToolForUser(t, user.Username, "cursor")
-	to := createRandomAiToolForUser(t, user.Username, "copilot")
+	username := createRandomUser(t).Username
+	from := createAiToolForSpecificUserAndTool(t, username, "cursor")
+	to := createAiToolForSpecificUserAndTool(t, username, "copilot")
 
 	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
 		FromAiToolID: from.ID,
@@ -176,8 +176,8 @@ func TestTransferTokensTxSameUser(t *testing.T) {
 func TestTransferTokensTxDifferentAiTool(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	from := createRandomAiToolForUser(t, createRandomUser(t).Username, "cursor")
-	to := createRandomAiToolForUser(t, createRandomUser(t).Username, "copilot")
+	from := createAiToolForSpecificUserAndTool(t, createRandomUser(t).Username, "cursor")
+	to := createAiToolForSpecificUserAndTool(t, createRandomUser(t).Username, "copilot")
 
 	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
 		FromAiToolID: from.ID,

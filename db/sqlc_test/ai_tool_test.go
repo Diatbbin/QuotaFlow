@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAiToolForUser(t *testing.T, username string, tool string) db.AiTool {
+func createAiToolForSpecificUserAndTool(t *testing.T, username string, tool string) db.AiTool {
 	arg := db.CreateAiToolParams{
 		Username:   username,
 		Tool:       tool,
@@ -31,13 +31,13 @@ func createRandomAiToolForUser(t *testing.T, username string, tool string) db.Ai
 
 	return aiTool
 }
-func createRandomAiTool(t *testing.T) db.AiTool {
-	return createRandomAiToolForUser(t, createRandomUser(t).Username, util.RandomTool())
+
+func createAiToolForRandomUser(t *testing.T, tool string) db.AiTool {
+	return createAiToolForSpecificUserAndTool(t, createRandomUser(t).Username, tool)
 }
 
 func TestGetAiTool(t *testing.T) {
-	username := createRandomUser(t).Username
-	aiTool1 := createRandomAiToolForUser(t, username, util.RandomTool())
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
 
 	aiTool2, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
 	require.NoError(t, err)
@@ -52,7 +52,7 @@ func TestGetAiTool(t *testing.T) {
 }
 
 func TestDeleteAiTool(t *testing.T) {
-	aiTool1 := createRandomAiTool(t)
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
 	err := testQueries.DeleteAiTool(context.Background(), aiTool1.ID)
 	require.NoError(t, err)
 
@@ -65,7 +65,7 @@ func TestDeleteAiTool(t *testing.T) {
 func TestListAiTools(t *testing.T) {
 	var lastAiTool db.AiTool
 	for i := 0; i < 10; i++ {
-		lastAiTool = createRandomAiTool(t)
+		lastAiTool = createAiToolForRandomUser(t, util.RandomTool())
 	}
 
 	arg := db.ListAiToolsParams{
