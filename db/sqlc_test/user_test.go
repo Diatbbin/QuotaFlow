@@ -13,7 +13,7 @@ import (
 func createRandomUser(t *testing.T) db.User {
 	hashedPassword, err := util.HashPassword(util.RandomString(8))
 	require.NoError(t, err)
-	
+
 	arg := db.CreateUserParams{
 		Email:        util.RandomEmail(),
 		Username:     util.RandomString(8),
@@ -41,7 +41,7 @@ func TestCreateUser(t *testing.T) {
 func TestGetUser(t *testing.T) {
 	user1 := createRandomUser(t)
 
-	user2, err := testQueries.GetUser(context.Background(), user1.ID)
+	user2, err := testQueries.GetUser(context.Background(), user1.Username)
 	require.NoError(t, err)
 	require.NotEmpty(t, user2)
 
@@ -53,7 +53,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetUserNotFound(t *testing.T) {
-	user, err := testQueries.GetUser(context.Background(), 999_999)
+	user, err := testQueries.GetUser(context.Background(), "user")
 	require.Error(t, err)
 	require.EqualError(t, err, sql.ErrNoRows.Error())
 	require.Empty(t, user)
