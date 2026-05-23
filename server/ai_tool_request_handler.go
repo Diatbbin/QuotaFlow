@@ -3,7 +3,9 @@ package server
 import (
 	"database/sql"
 	"net/http"
+	"errors"
 
+	token "github.com/diatbbin/QuotaFlow/auth"
 	"github.com/lib/pq"
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
@@ -22,9 +24,9 @@ func toAiToolResponse(a db.AiTool) aiToolResponse {
 }
 
 type createAiToolRequest struct {
-	UserID     int64  `json:"user_id" binding:"required,min=1"`
-	Tool       string `json:"tool" binding:"required"`
-	TokenLimit int64  `json:"token_limit" binding:"required,min=1"`
+	Username   string `json:"username" 		binding:"required"`
+	Tool       string `json:"tool"     		binding:"required"`
+	TokenLimit int64  `json:"token_limit" 	binding:"required,min=1"`
 }
 
 func (server *Server) createAiTool(ctx *gin.Context) {
@@ -34,8 +36,10 @@ func (server *Server) createAiTool(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+
 	aiTool, err := server.store.CreateAiTool(ctx, db.CreateAiToolParams{
-		UserID:     req.UserID,
+		Username:   authPayload.Username,
 		Tool:       req.Tool,
 		TokenLimit: req.TokenLimit,
 	})
@@ -75,6 +79,12 @@ func (server *Server) getAiTool(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if aiTool.Username != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("ai tool does not belong to this user")))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
 }
 
@@ -90,7 +100,9 @@ func (server *Server) listAiTools(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	aiTools, err := server.store.ListAiTools(ctx, db.ListAiToolsParams{
+		Username: authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	})

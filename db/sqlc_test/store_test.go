@@ -14,8 +14,8 @@ func TestTransferTokensTx(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	tool := util.RandomTool()
-	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
-	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
 
 	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
@@ -94,8 +94,8 @@ func TestTransferTokensTxDeadlock(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	tool := util.RandomTool()
-	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
-	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	aiTool1 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	aiTool2 := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
 
 	fmt.Printf(">> Initial spare tokens: t1: %v, t2: %v\n", db.SpareTokens(aiTool1), db.SpareTokens(aiTool2))
 
@@ -143,8 +143,8 @@ func TestTransferTokensTxInsufficientSpare(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	tool := util.RandomTool()
-	sender := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
-	recipient := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	sender := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	recipient := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
 
 	_, err := testDB.ExecContext(context.Background(),
 		`UPDATE ai_tools SET tokens_used = token_limit WHERE id = $1`, sender.ID)
@@ -162,8 +162,8 @@ func TestTransferTokensTxSameUser(t *testing.T) {
 	store := db.NewStore(testDB)
 
 	user := createRandomUser(t)
-	from := createRandomAiToolForUser(t, user.ID, "cursor")
-	to := createRandomAiToolForUser(t, user.ID, "copilot")
+	from := createRandomAiToolForUser(t, user.Username, "cursor")
+	to := createRandomAiToolForUser(t, user.Username, "copilot")
 
 	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
 		FromAiToolID: from.ID,
@@ -176,8 +176,8 @@ func TestTransferTokensTxSameUser(t *testing.T) {
 func TestTransferTokensTxDifferentAiTool(t *testing.T) {
 	store := db.NewStore(testDB)
 
-	from := createRandomAiToolForUser(t, createRandomUser(t).ID, "cursor")
-	to := createRandomAiToolForUser(t, createRandomUser(t).ID, "copilot")
+	from := createRandomAiToolForUser(t, createRandomUser(t).Username, "cursor")
+	to := createRandomAiToolForUser(t, createRandomUser(t).Username, "copilot")
 
 	_, err := store.TransferTokensTx(context.Background(), db.TransferTokensTxParams{
 		FromAiToolID: from.ID,

@@ -16,7 +16,7 @@ migrate-down:
 sqlc:
 	sqlc generate
 
-test: test-sqlc test-auth test-util
+test: test-sqlc test-auth test-util test-server
 
 test-sqlc:
 	go test -v -cover -coverpkg=./db/sqlc/... ./db/sqlc_test/... 
@@ -26,6 +26,9 @@ test-auth:
 
 test-util:
 	go test -v -cover -coverpkg=./util/... ./util/...
+
+test-server:
+	go test -v -cover -coverpkg=./server/... ./server/...
 
 server:
 	go run main.go

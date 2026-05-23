@@ -13,7 +13,7 @@ const addAiToolTokenLimit = `-- name: AddAiToolTokenLimit :one
 UPDATE ai_tools
 SET token_limit = token_limit + $1
 WHERE id = $2
-RETURNING id, user_id, tool, token_limit, tokens_used, created_at
+RETURNING id, username, tool, token_limit, tokens_used, created_at
 `
 
 type AddAiToolTokenLimitParams struct {
@@ -26,7 +26,7 @@ func (q *Queries) AddAiToolTokenLimit(ctx context.Context, arg AddAiToolTokenLim
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.Username,
 		&i.Tool,
 		&i.TokenLimit,
 		&i.TokensUsed,
@@ -37,27 +37,27 @@ func (q *Queries) AddAiToolTokenLimit(ctx context.Context, arg AddAiToolTokenLim
 
 const createAiTool = `-- name: CreateAiTool :one
 INSERT INTO ai_tools (
-    user_id,
+    username,
     tool,
     token_limit
 ) VALUES (
     $1, $2, $3
 )
-RETURNING id, user_id, tool, token_limit, tokens_used, created_at
+RETURNING id, username, tool, token_limit, tokens_used, created_at
 `
 
 type CreateAiToolParams struct {
-	UserID     int64  `json:"user_id"`
+	Username   string `json:"username"`
 	Tool       string `json:"tool"`
 	TokenLimit int64  `json:"token_limit"`
 }
 
 func (q *Queries) CreateAiTool(ctx context.Context, arg CreateAiToolParams) (AiTool, error) {
-	row := q.db.QueryRowContext(ctx, createAiTool, arg.UserID, arg.Tool, arg.TokenLimit)
+	row := q.db.QueryRowContext(ctx, createAiTool, arg.Username, arg.Tool, arg.TokenLimit)
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.Username,
 		&i.Tool,
 		&i.TokenLimit,
 		&i.TokensUsed,
@@ -77,7 +77,7 @@ func (q *Queries) DeleteAiTool(ctx context.Context, id int64) error {
 }
 
 const getAiTool = `-- name: GetAiTool :one
-SELECT id, user_id, tool, token_limit, tokens_used, created_at FROM ai_tools
+SELECT id, username, tool, token_limit, tokens_used, created_at FROM ai_tools
 WHERE id = $1 LIMIT 1
 `
 
@@ -86,7 +86,7 @@ func (q *Queries) GetAiTool(ctx context.Context, id int64) (AiTool, error) {
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.Username,
 		&i.Tool,
 		&i.TokenLimit,
 		&i.TokensUsed,
@@ -96,7 +96,7 @@ func (q *Queries) GetAiTool(ctx context.Context, id int64) (AiTool, error) {
 }
 
 const getAiToolForUpdate = `-- name: GetAiToolForUpdate :one
-SELECT id, user_id, tool, token_limit, tokens_used, created_at FROM ai_tools
+SELECT id, username, tool, token_limit, tokens_used, created_at FROM ai_tools
 WHERE id = $1 LIMIT 1
 FOR NO KEY UPDATE
 `
@@ -106,7 +106,7 @@ func (q *Queries) GetAiToolForUpdate(ctx context.Context, id int64) (AiTool, err
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.Username,
 		&i.Tool,
 		&i.TokenLimit,
 		&i.TokensUsed,
@@ -116,18 +116,20 @@ func (q *Queries) GetAiToolForUpdate(ctx context.Context, id int64) (AiTool, err
 }
 
 const listAiTools = `-- name: ListAiTools :many
-SELECT id, user_id, tool, token_limit, tokens_used, created_at FROM ai_tools
+SELECT id, username, tool, token_limit, tokens_used, created_at FROM ai_tools
+WHERE username = $1
 ORDER BY id
-LIMIT $1 OFFSET $2
+LIMIT $2 OFFSET $3
 `
 
 type ListAiToolsParams struct {
-	Limit  int32 `json:"limit"`
-	Offset int32 `json:"offset"`
+	Username string `json:"username"`
+	Limit    int32  `json:"limit"`
+	Offset   int32  `json:"offset"`
 }
 
 func (q *Queries) ListAiTools(ctx context.Context, arg ListAiToolsParams) ([]AiTool, error) {
-	rows, err := q.db.QueryContext(ctx, listAiTools, arg.Limit, arg.Offset)
+	rows, err := q.db.QueryContext(ctx, listAiTools, arg.Username, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +139,7 @@ func (q *Queries) ListAiTools(ctx context.Context, arg ListAiToolsParams) ([]AiT
 		var i AiTool
 		if err := rows.Scan(
 			&i.ID,
-			&i.UserID,
+			&i.Username,
 			&i.Tool,
 			&i.TokenLimit,
 			&i.TokensUsed,
@@ -160,7 +162,7 @@ const updateAiToolTokenLimit = `-- name: UpdateAiToolTokenLimit :one
 UPDATE ai_tools
 SET token_limit = $1
 WHERE id = $2
-RETURNING id, user_id, tool, token_limit, tokens_used, created_at
+RETURNING id, username, tool, token_limit, tokens_used, created_at
 `
 
 type UpdateAiToolTokenLimitParams struct {
@@ -173,7 +175,7 @@ func (q *Queries) UpdateAiToolTokenLimit(ctx context.Context, arg UpdateAiToolTo
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
-		&i.UserID,
+		&i.Username,
 		&i.Tool,
 		&i.TokenLimit,
 		&i.TokensUsed,

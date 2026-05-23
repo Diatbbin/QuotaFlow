@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	token "github.com/diatbbin/QuotaFlow/auth"
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
 )
@@ -36,7 +37,19 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 		return
 	}
 
-	if !server.validateTokenTransfer(ctx, req.FromAiToolID) || !server.validateTokenTransfer(ctx, req.ToAiToolID) {
+	fromAiTool, fromValid := server.validateTokenTransfer(ctx, req.FromAiToolID)
+	if !fromValid {
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if fromAiTool.Username != authPayload.Username {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("Sender's ai tool does not belong to this user")))
+		return
+	}
+
+	_, toValid := server.validateTokenTransfer(ctx, req.ToAiToolID)
+	if !toValid {
 		return
 	}
 
@@ -60,16 +73,16 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, toTokenTransferResponse(result.Transfer, result.FromAiTool, result.ToAiTool))
 }
 
-func (server *Server) validateTokenTransfer(ctx *gin.Context, aiToolID int64) bool {
-	_, err := server.store.GetAiTool(ctx, aiToolID)
+func (server *Server) validateTokenTransfer(ctx *gin.Context, aiToolID int64) (db.AiTool, bool) {
+	account, err := server.store.GetAiTool(ctx, aiToolID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return account, false
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return account, false
 	}
 
-	return true
+	return account, true
 }

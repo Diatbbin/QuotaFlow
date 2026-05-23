@@ -81,7 +81,7 @@ func (store *Store) TransferTokensTx(ctx context.Context, arg TransferTokensTxPa
 			return err
 		}
 
-		if from.UserID == to.UserID {
+		if from.Username == to.Username {
 			return ErrTransferSameUser
 		}
 		if from.Tool != to.Tool {

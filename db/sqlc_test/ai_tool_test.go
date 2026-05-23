@@ -10,9 +10,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAiToolForUser(t *testing.T, userID int64, tool string) db.AiTool {
+func createRandomAiToolForUser(t *testing.T, username string, tool string) db.AiTool {
 	arg := db.CreateAiToolParams{
-		UserID:     userID,
+		Username:   username,
 		Tool:       tool,
 		TokenLimit: util.RandomTokenLimit(),
 	}
@@ -21,7 +21,7 @@ func createRandomAiToolForUser(t *testing.T, userID int64, tool string) db.AiToo
 	require.NoError(t, err)
 	require.NotEmpty(t, aiTool)
 
-	require.Equal(t, arg.UserID, aiTool.UserID)
+	require.Equal(t, arg.Username, aiTool.Username)
 	require.Equal(t, arg.Tool, aiTool.Tool)
 	require.Equal(t, arg.TokenLimit, aiTool.TokenLimit)
 	require.Equal(t, int64(0), aiTool.TokensUsed)
@@ -31,24 +31,20 @@ func createRandomAiToolForUser(t *testing.T, userID int64, tool string) db.AiToo
 
 	return aiTool
 }
-
 func createRandomAiTool(t *testing.T) db.AiTool {
-	return createRandomAiToolForUser(t, createRandomUser(t).ID, util.RandomTool())
-}
-
-func TestCreateAiTool(t *testing.T) {
-	createRandomAiTool(t)
+	return createRandomAiToolForUser(t, createRandomUser(t).Username, util.RandomTool())
 }
 
 func TestGetAiTool(t *testing.T) {
-	aiTool1 := createRandomAiTool(t)
+	username := createRandomUser(t).Username
+	aiTool1 := createRandomAiToolForUser(t, username, util.RandomTool())
 
 	aiTool2, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, aiTool2)
 
 	require.Equal(t, aiTool1.ID, aiTool2.ID)
-	require.Equal(t, aiTool1.UserID, aiTool2.UserID)
+	require.Equal(t, aiTool1.Username, aiTool2.Username)
 	require.Equal(t, aiTool1.Tool, aiTool2.Tool)
 	require.Equal(t, aiTool1.TokenLimit, aiTool2.TokenLimit)
 	require.Equal(t, aiTool1.TokensUsed, aiTool2.TokensUsed)
@@ -67,20 +63,23 @@ func TestDeleteAiTool(t *testing.T) {
 }
 
 func TestListAiTools(t *testing.T) {
+	var lastAiTool db.AiTool
 	for i := 0; i < 10; i++ {
-		createRandomAiTool(t)
+		lastAiTool = createRandomAiTool(t)
 	}
 
 	arg := db.ListAiToolsParams{
+		Username: lastAiTool.Username,
 		Limit:  10,
-		Offset: 5,
+		Offset: 0,
 	}
 
 	aiTools, err := testQueries.ListAiTools(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, aiTools, 10)
+	require.NotEmpty(t, aiTools)
 
 	for _, aiTool := range aiTools {
 		require.NotEmpty(t, aiTool)
+		require.Equal(t, lastAiTool.ID, aiTool.ID)
 	}
 }

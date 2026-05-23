@@ -13,7 +13,7 @@ type Server struct {
 	config 		util.Config
 	store  		*db.Store
 	router 		*gin.Engine
-	tokenMaker  *token.PasetoMaker
+	tokenMaker  token.PasetoMaker
 }
 
 func NewServer(store *db.Store, config util.Config) (*Server, error) {
@@ -25,7 +25,7 @@ func NewServer(store *db.Store, config util.Config) (*Server, error) {
 	server := &Server{
 		config: config,
 		store: store,
-		tokenMaker: tokenMaker,
+		tokenMaker: *tokenMaker,
 	}
 
 	server.setupRouter()
@@ -38,13 +38,15 @@ func (server *Server) setupRouter() {
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
 
-	router.POST("/ai-tools", server.createAiTool)
-	router.GET("/ai-tools/:id", server.getAiTool)
-	router.GET("/ai-tools", server.listAiTools)
-	router.PUT("/ai-tools/:id", server.updateAiToolTokenLimit)
-	router.DELETE("/ai-tools/:id", server.deleteAiTool)
+	authRoutes := router.Group("/").Use(returnAuthMiddleware(server.tokenMaker))
 
-	router.POST("/token-transfers", server.createTokenTransfer)
+	authRoutes.POST("/ai-tools", server.createAiTool)
+	authRoutes.GET("/ai-tools/:id", server.getAiTool)
+	authRoutes.GET("/ai-tools", server.listAiTools)
+	authRoutes.PUT("/ai-tools/:id", server.updateAiToolTokenLimit)
+	authRoutes.DELETE("/ai-tools/:id", server.deleteAiTool)
+
+	authRoutes.POST("/token-transfers", server.createTokenTransfer)
 
 	server.router = router
 }

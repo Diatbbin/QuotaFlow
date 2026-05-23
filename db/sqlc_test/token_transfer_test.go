@@ -12,8 +12,8 @@ import (
 
 func createRandomTokenTransfer(t *testing.T) db.TokenTransfer {
 	tool := util.RandomTool()
-	from := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
-	to := createRandomAiToolForUser(t, createRandomUser(t).ID, tool)
+	from := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
+	to := createRandomAiToolForUser(t, createRandomUser(t).Username, tool)
 
 	arg := db.CreateTokenTransferParams{
 		FromAiToolID: from.ID,

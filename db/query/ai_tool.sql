@@ -1,6 +1,6 @@
 -- name: CreateAiTool :one
 INSERT INTO ai_tools (
-    user_id,
+    username,
     tool,
     token_limit
 ) VALUES (
@@ -19,8 +19,9 @@ FOR NO KEY UPDATE;
 
 -- name: ListAiTools :many
 SELECT * FROM ai_tools
+WHERE username = $1
 ORDER BY id
-LIMIT $1 OFFSET $2;
+LIMIT $2 OFFSET $3;
 
 -- name: AddAiToolTokenLimit :one
 UPDATE ai_tools

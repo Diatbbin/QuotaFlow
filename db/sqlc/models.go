@@ -10,7 +10,7 @@ import (
 
 type AiTool struct {
 	ID         int64     `json:"id"`
-	UserID     int64     `json:"user_id"`
+	Username   string    `json:"username"`
 	Tool       string    `json:"tool"`
 	TokenLimit int64     `json:"token_limit"`
 	TokensUsed int64     `json:"tokens_used"`
@@ -22,14 +22,6 @@ type TokenTransfer struct {
 	FromAiToolID int64 `json:"from_ai_tool_id"`
 	ToAiToolID   int64 `json:"to_ai_tool_id"`
 	// Unused tokens moved to a colleague
-	Tokens    int64     `json:"tokens"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type UsageEvent struct {
-	ID       int64 `json:"id"`
-	AiToolID int64 `json:"ai_tool_id"`
-	// can only be negative (spent)
 	Tokens    int64     `json:"tokens"`
 	CreatedAt time.Time `json:"created_at"`
 }
