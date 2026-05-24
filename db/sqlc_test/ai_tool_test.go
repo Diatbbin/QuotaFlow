@@ -51,9 +51,65 @@ func TestGetAiTool(t *testing.T) {
 	require.WithinDuration(t, aiTool1.CreatedAt, aiTool2.CreatedAt, 0)
 }
 
+func TestUpdateAiToolTokenLimit(t *testing.T) {
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
+	newLimit := aiTool1.TokenLimit + 100
+
+	aiTool2, err := testQueries.UpdateAiToolTokenLimit(context.Background(), db.UpdateAiToolTokenLimitParams{
+		TokenLimit: newLimit,
+		ID:         aiTool1.ID,
+		Username:   aiTool1.Username,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, aiTool2)
+
+	require.Equal(t, aiTool1.ID, aiTool2.ID)
+	require.Equal(t, aiTool1.Username, aiTool2.Username)
+	require.Equal(t, aiTool1.Tool, aiTool2.Tool)
+	require.Equal(t, newLimit, aiTool2.TokenLimit)
+	require.Equal(t, aiTool1.TokensUsed, aiTool2.TokensUsed)
+	require.WithinDuration(t, aiTool1.CreatedAt, aiTool2.CreatedAt, 0)
+
+	aiTool3, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
+	require.NoError(t, err)
+	require.Equal(t, newLimit, aiTool3.TokenLimit)
+}
+
+func TestUpdateAiToolTokenLimitWrongUser(t *testing.T) {
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
+	otherUser := createRandomUser(t)
+
+	_, err := testQueries.UpdateAiToolTokenLimit(context.Background(), db.UpdateAiToolTokenLimitParams{
+		TokenLimit: aiTool1.TokenLimit + 50,
+		ID:         aiTool1.ID,
+		Username:   otherUser.Username,
+	})
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+
+	unchanged, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
+	require.NoError(t, err)
+	require.Equal(t, aiTool1.TokenLimit, unchanged.TokenLimit)
+}
+
+func TestUpdateAiToolThatDoesNotExist(t *testing.T) {
+	user := createRandomUser(t)
+
+	_, err := testQueries.UpdateAiToolTokenLimit(context.Background(), db.UpdateAiToolTokenLimitParams{
+		TokenLimit: 500,
+		ID:         999999999,
+		Username:   user.Username,
+	})
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+}
+
 func TestDeleteAiTool(t *testing.T) {
 	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
-	err := testQueries.DeleteAiTool(context.Background(), aiTool1.ID)
+	err := testQueries.DeleteAiTool(context.Background(), db.DeleteAiToolParams{
+		ID:       aiTool1.ID,
+		Username: aiTool1.Username,
+	})
 	require.NoError(t, err)
 
 	aiTool2, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
