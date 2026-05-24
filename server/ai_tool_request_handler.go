@@ -140,11 +140,17 @@ func (server *Server) updateAiToolTokenLimit(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	aiTool, err := server.store.UpdateAiToolTokenLimit(ctx, db.UpdateAiToolTokenLimitParams{
 		TokenLimit: req.TokenLimit,
 		ID:         uriReq.ID,
+		Username:   authPayload.Username,
 	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -163,8 +169,16 @@ func (server *Server) deleteAiTool(ctx *gin.Context) {
 		return
 	}
 
-	err := server.store.DeleteAiTool(ctx, req.ID)
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	err := server.store.DeleteAiTool(ctx, db.DeleteAiToolParams{
+		ID:       req.ID,
+		Username: authPayload.Username,
+	})
 	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}

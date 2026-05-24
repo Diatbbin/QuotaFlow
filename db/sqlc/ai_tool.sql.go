@@ -68,11 +68,16 @@ func (q *Queries) CreateAiTool(ctx context.Context, arg CreateAiToolParams) (AiT
 
 const deleteAiTool = `-- name: DeleteAiTool :exec
 DELETE FROM ai_tools
-WHERE id = $1
+WHERE id = $1 AND username = $2
 `
 
-func (q *Queries) DeleteAiTool(ctx context.Context, id int64) error {
-	_, err := q.db.ExecContext(ctx, deleteAiTool, id)
+type DeleteAiToolParams struct {
+	ID       int64  `json:"id"`
+	Username string `json:"username"`
+}
+
+func (q *Queries) DeleteAiTool(ctx context.Context, arg DeleteAiToolParams) error {
+	_, err := q.db.ExecContext(ctx, deleteAiTool, arg.ID, arg.Username)
 	return err
 }
 
@@ -161,17 +166,18 @@ func (q *Queries) ListAiTools(ctx context.Context, arg ListAiToolsParams) ([]AiT
 const updateAiToolTokenLimit = `-- name: UpdateAiToolTokenLimit :one
 UPDATE ai_tools
 SET token_limit = $1
-WHERE id = $2
+WHERE id = $2 AND username = $3
 RETURNING id, username, tool, token_limit, tokens_used, created_at
 `
 
 type UpdateAiToolTokenLimitParams struct {
-	TokenLimit int64 `json:"token_limit"`
-	ID         int64 `json:"id"`
+	TokenLimit int64  `json:"token_limit"`
+	ID         int64  `json:"id"`
+	Username   string `json:"username"`
 }
 
 func (q *Queries) UpdateAiToolTokenLimit(ctx context.Context, arg UpdateAiToolTokenLimitParams) (AiTool, error) {
-	row := q.db.QueryRowContext(ctx, updateAiToolTokenLimit, arg.TokenLimit, arg.ID)
+	row := q.db.QueryRowContext(ctx, updateAiToolTokenLimit, arg.TokenLimit, arg.ID, arg.Username)
 	var i AiTool
 	err := row.Scan(
 		&i.ID,
