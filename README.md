@@ -68,8 +68,8 @@ ACCESS_TOKEN_DURATION=15m
 
 | Method | Path                        | Description                                                                                                        |
 | ------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| POST   | `/users`                    | Register new user, username (alphanumeric & at least chars), password (at least 8 chars)                           |
-| POST   | `/users/login`              | Login user, username (alphanumeric & at least chars), password (at least 8 chars)                                  |
+| POST   | `/users`                    | Register new user, username (alphanumeric & at least 3 chars), password (at least 8 chars)                           |
+| POST   | `/users/login`              | Login user, username (alphanumeric & at least 3 chars), password (at least 8 chars)                                  |
 | POST   | `/ai-tools`                 | Create AI tool for logged-in user (owner from access token; body: `tool`, `token_limit`), token_limit (at least 1) |
 | GET    | `/ai-tools`                 | Retrieves your AI tools (paginated), page size must be (5-10)                                                      |
 | GET    | `/ai-tools/:id`             | Get a specific AI tool                                                                                             |
