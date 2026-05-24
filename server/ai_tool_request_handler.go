@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"errors"
+	"fmt"
 
 	token "github.com/diatbbin/QuotaFlow/auth"
 	"github.com/lib/pq"
@@ -14,19 +15,20 @@ import (
 type aiToolResponse struct {
 	AiTool      db.AiTool `json:"ai_tool"`
 	SpareTokens int64     `json:"spare_tokens"`
+	Message     string    `json:"message"`
 }
 
-func toAiToolResponse(a db.AiTool) aiToolResponse {
+func toAiToolResponse(a db.AiTool, message string) aiToolResponse {
 	return aiToolResponse{
 		AiTool:      a,
 		SpareTokens: db.SpareTokens(a),
+		Message: message,
 	}
 }
 
 type createAiToolRequest struct {
-	Username   string `json:"username" 		binding:"required"`
-	Tool       string `json:"tool"     		binding:"required"`
-	TokenLimit int64  `json:"token_limit" 	binding:"required,min=1"`
+	Tool       string `json:"tool" binding:"required"`
+	TokenLimit int64  `json:"token_limit" binding:"required,min=1"`
 }
 
 func (server *Server) createAiTool(ctx *gin.Context) {
@@ -55,7 +57,7 @@ func (server *Server) createAiTool(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool, fmt.Sprintf("ai tool %s created successfully for user %s", aiTool.Tool, authPayload.Username)))
 }
 
 type getAiToolRequest struct {
@@ -84,8 +86,8 @@ func (server *Server) getAiTool(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(errors.New("ai tool does not belong to this user")))
 		return
 	}
-
-	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
+	
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool, fmt.Sprintf("ai tool %s retrieved for get operation successfully for user %s", aiTool.Tool, authPayload.Username)))
 }
 
 type listAiToolsRequest struct {
@@ -113,7 +115,7 @@ func (server *Server) listAiTools(ctx *gin.Context) {
 
 	resp := make([]aiToolResponse, len(aiTools))
 	for i, a := range aiTools {
-		resp[i] = toAiToolResponse(a)
+		resp[i] = toAiToolResponse(a, fmt.Sprintf("ai tool %s retrieved for list operation successfully for user %s", a.Tool, authPayload.Username))
 	}
 
 	ctx.JSON(http.StatusOK, resp)
@@ -155,7 +157,7 @@ func (server *Server) updateAiToolTokenLimit(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool, fmt.Sprintf("ai tool %s token limit updated to %d successfully for user %s", aiTool.Tool, req.TokenLimit, authPayload.Username)))
 }
 
 type updateAiToolTokensUsedRequest struct {
@@ -197,7 +199,7 @@ func (server *Server) updateAiToolTokensUsed(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool, fmt.Sprintf("ai tool %s tokens used updated to %d successfully for user %s", aiTool.Tool, req.TokensUsed, authPayload.Username)))
 }
 
 type deleteAiToolURIRequest struct {

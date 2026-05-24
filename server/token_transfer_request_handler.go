@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
-
+	"fmt"
+	
 	token "github.com/diatbbin/QuotaFlow/auth"
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
@@ -19,8 +20,8 @@ type tokenTransferResponse struct {
 func toTokenTransferResponse(t db.TokenTransfer, from, to db.AiTool) tokenTransferResponse {
 	return tokenTransferResponse{
 		TokenTransfer: t,
-		FromAiTool:    toAiToolResponse(from),
-		ToAiTool:      toAiToolResponse(to),
+		FromAiTool:    toAiToolResponse(from, fmt.Sprintf("tokens %d transferred successfully from ai tool %s to ai tool %s", t.Tokens, from.Tool, to.Tool)),
+		ToAiTool:      toAiToolResponse(to, fmt.Sprintf("tokens %d received successfully from ai tool %s to ai tool %s", t.Tokens, from.Tool, to.Tool)),
 	}
 }
 

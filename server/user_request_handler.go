@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 	"database/sql"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lib/pq"
@@ -16,19 +17,21 @@ type userResponse struct {
 	Email     string `json:"email"`
 	Username  string `json:"username"`
 	CreatedAt string `json:"created_at"`
+	Message   string `json:"message"`
 }
 
-func toCreateUserResponse(u db.User) userResponse {
+func toCreateUserResponse(u db.User, message string) userResponse {
 	return userResponse{
 		ID:        u.ID,
 		Email:     u.Email,
 		Username:  u.Username,
 		CreatedAt: u.CreatedAt.Format(time.RFC3339),
+		Message:   message,
 	}
 }
 
 type createUserRequest struct {
-	Username string `json:"username" binding:"required,min=3"`
+	Username string `json:"username" binding:"required,min=3,alphanum"`
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
 }
@@ -63,7 +66,7 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, toCreateUserResponse(user))
+	ctx.JSON(http.StatusOK, toCreateUserResponse(user, fmt.Sprintf("user %s created successfully", user.Username)))
 }
 
 type loginUserRequest struct {
@@ -107,7 +110,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 
 	rsp := loginUserResponse{
 		AccessToken: accessToken,
-		User:        toCreateUserResponse(user),
+		User:        toCreateUserResponse(user, fmt.Sprintf("user %s logged in successfully", user.Username)),
 	}
 
 	ctx.JSON(http.StatusOK, rsp)
