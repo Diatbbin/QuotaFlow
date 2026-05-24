@@ -118,6 +118,28 @@ func TestDeleteAiTool(t *testing.T) {
 	require.Empty(t, aiTool2)
 }
 
+func TestDeleteAiToolCascadesTokenTransfers(t *testing.T) {
+	from := createAiToolForRandomUser(t, util.RandomTool())
+	to := createAiToolForRandomUser(t, util.RandomTool())
+
+	transfer, err := testQueries.CreateTokenTransfer(context.Background(), db.CreateTokenTransferParams{
+		FromAiToolID: from.ID,
+		ToAiToolID:   to.ID,
+		Tokens:       util.RandomTokenUsed() + 1,
+	})
+	require.NoError(t, err)
+
+	err = testQueries.DeleteAiTool(context.Background(), db.DeleteAiToolParams{
+		ID:       from.ID,
+		Username: from.Username,
+	})
+	require.NoError(t, err)
+
+	_, err = testQueries.GetTokenTransfer(context.Background(), transfer.ID)
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+}
+
 func TestListAiTools(t *testing.T) {
 	var lastAiTool db.AiTool
 	for i := 0; i < 10; i++ {

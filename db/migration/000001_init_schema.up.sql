@@ -35,6 +35,6 @@ COMMENT ON COLUMN token_transfers.tokens IS 'Unused tokens moved to a colleague'
 
 ALTER TABLE ai_tools ADD FOREIGN KEY (username) REFERENCES users (username);
 
-ALTER TABLE token_transfers ADD FOREIGN KEY (from_ai_tool_id) REFERENCES ai_tools (id);
+ALTER TABLE token_transfers ADD FOREIGN KEY (from_ai_tool_id) REFERENCES ai_tools (id) ON DELETE CASCADE;
 
-ALTER TABLE token_transfers ADD FOREIGN KEY (to_ai_tool_id) REFERENCES ai_tools (id);
+ALTER TABLE token_transfers ADD FOREIGN KEY (to_ai_tool_id) REFERENCES ai_tools (id) ON DELETE CASCADE;
