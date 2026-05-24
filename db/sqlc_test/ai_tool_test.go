@@ -92,6 +92,63 @@ func TestUpdateAiToolTokenLimitWrongUser(t *testing.T) {
 	require.Equal(t, aiTool1.TokenLimit, unchanged.TokenLimit)
 }
 
+func TestUpdateAiToolTokensUsed(t *testing.T) {
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
+	newUsed := util.RandomTokenUsed() + 1
+	require.LessOrEqual(t, newUsed, aiTool1.TokenLimit)
+
+	aiTool2, err := testQueries.UpdateAiToolTokensUsed(context.Background(), db.UpdateAiToolTokensUsedParams{
+		TokensUsed: newUsed,
+		ID:         aiTool1.ID,
+		Username:   aiTool1.Username,
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, aiTool2)
+
+	require.Equal(t, aiTool1.ID, aiTool2.ID)
+	require.Equal(t, aiTool1.Username, aiTool2.Username)
+	require.Equal(t, aiTool1.Tool, aiTool2.Tool)
+	require.Equal(t, aiTool1.TokenLimit, aiTool2.TokenLimit)
+	require.Equal(t, newUsed, aiTool2.TokensUsed)
+	require.WithinDuration(t, aiTool1.CreatedAt, aiTool2.CreatedAt, 0)
+
+	aiTool3, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
+	require.NoError(t, err)
+	require.Equal(t, newUsed, aiTool3.TokensUsed)
+}
+
+func TestUpdateAiToolTokensUsedWrongUser(t *testing.T) {
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
+	otherUser := createRandomUser(t)
+
+	_, err := testQueries.UpdateAiToolTokensUsed(context.Background(), db.UpdateAiToolTokensUsedParams{
+		TokensUsed: 1,
+		ID:         aiTool1.ID,
+		Username:   otherUser.Username,
+	})
+	require.Error(t, err)
+	require.EqualError(t, err, sql.ErrNoRows.Error())
+
+	unchanged, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
+	require.NoError(t, err)
+	require.Equal(t, aiTool1.TokensUsed, unchanged.TokensUsed)
+}
+
+func TestUpdateAiToolTokensUsedExceedsLimit(t *testing.T) {
+	aiTool1 := createAiToolForRandomUser(t, util.RandomTool())
+
+	_, err := testQueries.UpdateAiToolTokensUsed(context.Background(), db.UpdateAiToolTokensUsedParams{
+		TokensUsed: aiTool1.TokenLimit + 1,
+		ID:         aiTool1.ID,
+		Username:   aiTool1.Username,
+	})
+	require.Error(t, err)
+
+	unchanged, err := testQueries.GetAiTool(context.Background(), aiTool1.ID)
+	require.NoError(t, err)
+	require.Equal(t, aiTool1.TokensUsed, unchanged.TokensUsed)
+}
+
 func TestUpdateAiToolThatDoesNotExist(t *testing.T) {
 	user := createRandomUser(t)
 

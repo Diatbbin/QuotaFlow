@@ -158,6 +158,48 @@ func (server *Server) updateAiToolTokenLimit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
 }
 
+type updateAiToolTokensUsedRequest struct {
+	TokensUsed int64 `json:"tokens_used" binding:"required,min=0"`
+}
+
+func (server *Server) updateAiToolTokensUsed(ctx *gin.Context) {
+	var uriReq updateAiToolURIRequest
+	if err := ctx.ShouldBindUri(&uriReq); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var req updateAiToolTokensUsedRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	aiTool, err := server.store.UpdateAiToolTokensUsed(ctx, db.UpdateAiToolTokensUsedParams{
+		TokensUsed: req.TokensUsed,
+		ID:         uriReq.ID,
+		Username:   authPayload.Username,
+	})
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		if pqErr, ok := err.(*pq.Error); ok {
+			switch pqErr.Code.Name() {
+			case "check_violation":
+				ctx.JSON(http.StatusBadRequest, errorResponse(err))
+				return
+			}
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, toAiToolResponse(aiTool))
+}
+
 type deleteAiToolURIRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }

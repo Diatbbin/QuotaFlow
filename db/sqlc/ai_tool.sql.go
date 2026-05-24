@@ -189,3 +189,30 @@ func (q *Queries) UpdateAiToolTokenLimit(ctx context.Context, arg UpdateAiToolTo
 	)
 	return i, err
 }
+
+const updateAiToolTokensUsed = `-- name: UpdateAiToolTokensUsed :one
+UPDATE ai_tools
+SET tokens_used = $1
+WHERE id = $2 AND username = $3
+RETURNING id, username, tool, token_limit, tokens_used, created_at
+`
+
+type UpdateAiToolTokensUsedParams struct {
+	TokensUsed int64  `json:"tokens_used"`
+	ID         int64  `json:"id"`
+	Username   string `json:"username"`
+}
+
+func (q *Queries) UpdateAiToolTokensUsed(ctx context.Context, arg UpdateAiToolTokensUsedParams) (AiTool, error) {
+	row := q.db.QueryRowContext(ctx, updateAiToolTokensUsed, arg.TokensUsed, arg.ID, arg.Username)
+	var i AiTool
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.Tool,
+		&i.TokenLimit,
+		&i.TokensUsed,
+		&i.CreatedAt,
+	)
+	return i, err
+}

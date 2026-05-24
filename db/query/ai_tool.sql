@@ -35,6 +35,12 @@ SET token_limit = $1
 WHERE id = $2 AND username = $3
 RETURNING *;
 
+-- name: UpdateAiToolTokensUsed :one
+UPDATE ai_tools
+SET tokens_used = $1
+WHERE id = $2 AND username = $3
+RETURNING *;
+
 -- name: DeleteAiTool :exec
 DELETE FROM ai_tools
 WHERE id = $1 AND username = $2;

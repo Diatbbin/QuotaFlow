@@ -44,6 +44,7 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/ai-tools/:id", server.getAiTool)
 	authRoutes.GET("/ai-tools", server.listAiTools)
 	authRoutes.PUT("/ai-tools/:id", server.updateAiToolTokenLimit)
+	authRoutes.PUT("/ai-tools/:id/tokens-used", server.updateAiToolTokensUsed)
 	authRoutes.DELETE("/ai-tools/:id", server.deleteAiTool)
 
 	authRoutes.POST("/token-transfers", server.createTokenTransfer)
