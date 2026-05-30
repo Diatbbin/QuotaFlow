@@ -3,12 +3,15 @@ package server
 import (
 	"database/sql"
 	"errors"
-	"net/http"
 	"fmt"
-	
+	"net/http"
+
 	token "github.com/diatbbin/QuotaFlow/auth"
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
+	worker "github.com/diatbbin/QuotaFlow/worker"
+	"github.com/hibiken/asynq"
+	log "github.com/rs/zerolog/log"
 )
 
 type tokenTransferResponse struct {
@@ -49,8 +52,14 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 		return
 	}
 
-	_, toValid := server.validateTokenTransfer(ctx, req.ToAiToolID)
+	toAiTool, toValid := server.validateTokenTransfer(ctx, req.ToAiToolID)
 	if !toValid {
+		return
+	}
+
+	senderUser, err := server.store.GetUser(ctx, authPayload.Username)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -59,6 +68,7 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 		ToAiToolID:   req.ToAiToolID,
 		Tokens:       req.Tokens,
 	})
+
 	if err != nil {
 		switch {
 		case errors.Is(err, db.ErrInsufficientTokens),
@@ -69,6 +79,23 @@ func (server *Server) createTokenTransfer(ctx *gin.Context) {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		}
 		return
+	}
+
+	taskPayload := &worker.PayloadSendTransferEmail{
+		RecipientUsername: toAiTool.Username,
+		SenderEmail:       senderUser.Email,
+		Tokens:            result.Transfer.Tokens,
+	}
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.Queue(worker.QueueCritical),
+	}
+	if err := server.distributor.DistributorTaskSendTransferEmail(ctx, taskPayload, opts...); err != nil {
+		log.Error().
+			Err(err).
+			Str("recipient_username", toAiTool.Username).
+			Int64("transfer_id", result.Transfer.ID).
+			Msg("transfer succeeded but failed to enqueue notification email")
 	}
 
 	ctx.JSON(http.StatusOK, toTokenTransferResponse(result.Transfer, result.FromAiTool, result.ToAiTool))

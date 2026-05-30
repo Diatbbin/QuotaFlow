@@ -12,6 +12,10 @@ type Config struct {
 	ServerAddress 		string 			`mapstructure:"SERVER_ADDRESS"`
 	TokenSymmetricKey 	string 			`mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration time.Duration 	`mapstructure:"ACCESS_TOKEN_DURATION"`
+	RedisAddr 			string 			`mapstructure:"REDIS_ADDR"`
+	EmailSenderName 	string 			`mapstructure:"EMAIL_SENDER_NAME"`
+	EmailSenderAddr 	string 			`mapstructure:"EMAIL_SENDER_ADDR"`
+	EmailPassword 		string 			`mapstructure:"EMAIL_PASSWORD"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

@@ -16,7 +16,7 @@ migrate-down:
 sqlc:
 	sqlc generate
 
-test: test-sqlc test-auth test-util test-server
+test: test-sqlc test-auth test-util test-server test-mail
 
 test-sqlc:
 	go test -v -cover -coverpkg=./db/sqlc/... ./db/sqlc_test/... 
@@ -30,7 +30,13 @@ test-util:
 test-server:
 	go test -v -cover -coverpkg=./server/... ./server/...
 
+test-mail:
+	go test -v -cover -coverpkg=./mail/... ./mail/...
+
 server:
 	go run main.go
 
-.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test test-sqlc test-auth test-util server
+redis:
+	docker run --name redis -p 6379:6379 -d redis:latest
+
+.PHONY: postgres create-db drop-db migrate-up migrate-down sqlc test test-sqlc test-auth test-util server redis

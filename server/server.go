@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	db "github.com/diatbbin/QuotaFlow/db/sqlc"
 	token "github.com/diatbbin/QuotaFlow/auth"
+	worker "github.com/diatbbin/QuotaFlow/worker"
 )
 
 type Server struct {
@@ -14,9 +15,10 @@ type Server struct {
 	store  		*db.Store
 	router 		*gin.Engine
 	tokenMaker  token.PasetoMaker
+	distributor worker.Distributor
 }
 
-func NewServer(store *db.Store, config util.Config) (*Server, error) {
+func NewServer(store *db.Store, config util.Config, distributor worker.Distributor) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		log.Fatal("cannot create token maker:", err)
@@ -26,6 +28,7 @@ func NewServer(store *db.Store, config util.Config) (*Server, error) {
 		config: config,
 		store: store,
 		tokenMaker: *tokenMaker,
+		distributor: distributor,
 	}
 
 	server.setupRouter()

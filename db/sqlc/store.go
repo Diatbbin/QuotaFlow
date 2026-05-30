@@ -110,8 +110,11 @@ func (store *Store) TransferTokensTx(ctx context.Context, arg TransferTokensTxPa
 				ctx, q, arg.ToAiToolID, arg.Tokens, arg.FromAiToolID, -arg.Tokens,
 			)
 		}
+		if err != nil {
+			return err
+		}
 
-		return err
+		return nil
 	})
 
 	return result, err
