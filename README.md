@@ -157,6 +157,10 @@ curl --max-time 90 -s -X POST "$BASE_URL/token-transfers" \
   -d "{\"from_ai_tool_id\":$USER1_AI_TOOL_ID,\"to_ai_tool_id\":$USER2_AI_TOOL_ID,\"tokens\":50}" | jq .
 ```
 
+### Example of a transfer notification email:
+
+<img width="640" height="426" alt="Screenshot_45" src="https://github.com/user-attachments/assets/cc9c2558-06d4-421a-98d9-bfa34cf339d1" />
+
 ### Update a tool
 
 Update token limit (e.g. 800):
