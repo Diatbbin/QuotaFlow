@@ -1,0 +1,5 @@
+app.env
+.git
+*.md
+db/sqlc_test
+server/*_test.go
