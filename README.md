@@ -50,13 +50,13 @@ No local setup required. Run these commands in your terminal
 
 Username must be alphanumeric (min 3 characters). Password must be at least 8 characters.
 
-Set `USER2_EMAIL` to **your own email** — user2 should receive the transfer notification after a successful token transfer (requires email/Redis configured on the deployed app)
+Set `USER2_EMAIL` to **your own email** to receive transfer notifications — user2 should receive the transfer notification after a successful token transfer (requires email/Redis configured on the deployed app)
 
 ```bash
 BASE_URL="https://quotaflow.fly.dev"
 
 USER1_EMAIL="user1@example.com"
-USER2_EMAIL="user2@example.com" # -> Use your email to receive transfer notifications
+USER2_EMAIL="user2@example.com"
 
 USER1="user1"
 USER2="user2"
@@ -196,9 +196,11 @@ Docker
 
 ### 1. Set up database
 
+Run `make create-db` only if the `QuotaFlow` database doesn't exist yet
+
 ```bash
 make postgres
-make create-db   # If the database doesn't exist yet
+make create-db  
 make migrate-up
 ```
 
@@ -224,11 +226,7 @@ Use Gmail for EMAIL_SENDER_ADDR and [Gmail's app password](https://myaccount.goo
 
 ### 3. Running tests
 
-Requires:
-
-- Postgres container running (`make postgres`)
-- Database created and migrated (`make create-db`, `make migrate-up`)
-- `app.env` configured in the project root
+From the project root:
 
 ```bash
 make test
