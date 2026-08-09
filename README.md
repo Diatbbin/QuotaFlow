@@ -1,6 +1,6 @@
 # QuotaFlow
 
-Go REST API for managing per-user AI tool token quotas and transferring spare tokens between users
+Go REST API that simulates per-user AI tool token quotas and spare token transfers between users
 
 Each user can register AI tools (e.g. ChatGPT) with a token limit. Users can transfer unused tokens to another user's tool of the **same type** (e.g. from ChatGPT to ChatGPT)
 
@@ -10,9 +10,7 @@ Each user can register AI tools (e.g. ChatGPT) with a token limit. Users can tra
 - PostgreSQL, sqlc, golang-migrate
 - PASETO, bcrypt
 - Redis, Asynq (async transfer email notifications)
-- Gmail SMTP
 - Fly.io (deployment)
-- testify
 
 ## Prerequisites for curl demo (testing the live app)
 
@@ -39,7 +37,7 @@ All routes except `POST /users` and `POST /users/login` require the user to be l
 | PUT    | `/ai-tools/:id`             | Update `token_limit` (min 0)                                                                                 |
 | PUT    | `/ai-tools/:id/tokens-used` | Update `tokens_used` (min 0)                                                                                 |
 | DELETE | `/ai-tools/:id`             | Delete AI tool                                                                                               |
-| POST   | `/token-transfers`          | Transfer spare tokens (min 1), using `from_ai_tool_id`, `to_ai_tool_id`, `amount of tokens to be transferred` |
+| POST   | `/token-transfers`          | Transfer spare tokens (min 1), using `from_ai_tool_id`, `to_ai_tool_id`, `tokens` |
 
 
 ## Quick demo (live app)
@@ -50,7 +48,7 @@ No local setup required. Run these commands in your terminal
 
 Username must be alphanumeric (min 3 characters). Password must be at least 8 characters.
 
-Set `USER2_EMAIL` to **your own email** to receive transfer notifications — user2 should receive the transfer notification after a successful token transfer (requires email/Redis configured on the deployed app)
+Set `USER2_EMAIL` to **your own email** so the receiver gets the transfer notification
 
 ```bash
 BASE_URL="https://quotaflow.fly.dev"
